@@ -29,9 +29,11 @@ docker-data/
 
 # Temporary brainstorming artifacts
 .superpowers/
+.worktrees/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
