@@ -1,0 +1,83 @@
+name: ecommerce-spark-warehouse
+
+services:
+  namenode:
+    image: apache/hadoop:3.3.6
+    container_name: esw-namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    volumes:
+      - namenode-data:/tmp/hadoop-root/dfs/name
+
+  datanode:
+    image: apache/hadoop:3.3.6
+    container_name: esw-datanode
+    command: ["hdfs", "datanode"]
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864"
+    volumes:
+      - datanode-data:/tmp/hadoop-root/dfs/data
+
+  mysql:
+    image: mysql:8.4
+    container_name: esw-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: ecommerce_ads
+      MYSQL_USER: ecommerce
+      MYSQL_PASSWORD: ecommerce_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: esw-spark-master
+    environment:
+      SPARK_MODE: master
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: esw-spark-worker
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+    depends_on:
+      - spark-master
+
+  hive-metastore:
+    image: apache/hive:4.0.0
+    container_name: esw-hive-metastore
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: mysql
+      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/ecommerce_ads -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver -Djavax.jdo.option.ConnectionUserName=ecommerce -Djavax.jdo.option.ConnectionPassword=ecommerce_password"
+    depends_on:
+      - mysql
+      - namenode
+    ports:
+      - "9083:9083"
+
+  hive-server2:
+    image: apache/hive:4.0.0
+    container_name: esw-hive-server2
+    environment:
+      SERVICE_NAME: hiveserver2
+      HIVE_METASTORE_URI: thrift://hive-metastore:9083
+    depends_on:
+      - hive-metastore
+    ports:
+      - "10000:10000"
+
+volumes:
+  namenode-data:
+  datanode-data:
+  mysql-data:
