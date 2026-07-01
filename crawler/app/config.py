@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Iterable
 
 
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "sources.json"
+
+
 @dataclass(frozen=True)
 class Source:
     name: str
@@ -12,7 +15,7 @@ class Source:
     entity: str
 
 
-def load_sources(config_path: Path | str = Path("crawler/config/sources.json")) -> list[Source]:
+def load_sources(config_path: Path | str = DEFAULT_CONFIG_PATH) -> list[Source]:
     path = Path(config_path)
     data = json.loads(path.read_text(encoding="utf-8"))
     raw_sources = data.get("sources")

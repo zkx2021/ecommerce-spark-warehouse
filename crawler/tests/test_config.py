@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -39,6 +40,30 @@ def test_load_sources_rejects_missing_sources_key(tmp_path):
 
     with pytest.raises(ValueError, match="sources"):
         load_sources(config_path)
+
+
+def test_load_sources_default_path_is_not_cwd_dependent(monkeypatch):
+    monkeypatch.chdir(Path("crawler"))
+
+    sources = load_sources()
+
+    assert sources == [
+        Source(
+            name="products",
+            url="https://dummyjson.com/products",
+            entity="product",
+        ),
+        Source(
+            name="carts",
+            url="https://dummyjson.com/carts",
+            entity="order",
+        ),
+        Source(
+            name="users",
+            url="https://dummyjson.com/users",
+            entity="user",
+        ),
+    ]
 
 
 def test_parse_batch_date_accepts_yyyy_mm_dd():
