@@ -1,0 +1,39 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+
+# Data and generated outputs
+data/raw/
+data/output/
+data/tmp/
+logs/
+*.log
+
+# Docker and local runtime volumes
+volumes/
+docker-data/
+
+# Temporary brainstorming artifacts
+.superpowers/
+.worktrees/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
