@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -27,6 +28,9 @@ def load_sources(config_path: Path | str = DEFAULT_CONFIG_PATH) -> list[Source]:
 
 
 def parse_batch_date(value: str) -> str:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValueError("Batch date must use YYYY-MM-DD format")
+
     try:
         parsed = datetime.strptime(value, "%Y-%m-%d")
     except ValueError as exc:

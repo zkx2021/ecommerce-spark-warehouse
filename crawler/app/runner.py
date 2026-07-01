@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from crawler.app.client import JsonHttpClient
 from crawler.app.config import Source
@@ -20,10 +20,14 @@ def run_ingestion(
 ) -> dict[str, dict]:
     active_client = client or JsonHttpClient()
     results: dict[str, dict] = {}
+    prepared_rows: list[tuple[Source, dict[str, Any], list[dict[str, Any]]]] = []
 
     for source in sources:
         payload = active_client.fetch_json(source.url)
         rows = transform_payload(source, payload, batch_date)
+        prepared_rows.append((source, payload, rows))
+
+    for source, payload, rows in prepared_rows:
         raw_path = write_raw_json(data_dir, batch_date, source.name, payload)
         processed_path = write_processed_jsonl(data_dir, batch_date, source.name, rows)
         results[source.name] = {

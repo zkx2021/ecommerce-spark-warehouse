@@ -75,5 +75,10 @@ def test_parse_batch_date_rejects_invalid_format():
         parse_batch_date("20260701")
 
 
+def test_parse_batch_date_rejects_non_zero_padded_values():
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        parse_batch_date("2026-7-1")
+
+
 def test_default_batch_date_uses_today():
     assert default_batch_date(today=date(2026, 7, 1)) == "2026-07-01"
