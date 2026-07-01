@@ -1,4 +1,9 @@
 import argparse
+import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from crawler.app.config import default_batch_date, load_sources, parse_batch_date
 from crawler.app.runner import run_ingestion

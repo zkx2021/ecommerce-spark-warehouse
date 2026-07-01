@@ -1,4 +1,7 @@
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 from crawler.app.config import Source
 from crawler.app.runner import run_ingestion
@@ -41,3 +44,18 @@ def test_run_ingestion_writes_raw_and_processed_files(tmp_path):
         "batch_date": "2026-07-01",
         "data": {"id": 1, "title": "Phone"},
     }
+
+
+def test_cli_help_runs_from_repo_root_without_import_error():
+    repo_root = Path(__file__).resolve().parents[2]
+
+    result = subprocess.run(
+        [sys.executable, "crawler/run.py", "--help"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Run ecommerce crawler ingestion." in result.stdout
