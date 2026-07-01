@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "name": "products",
+      "url": "https://dummyjson.com/products",
+      "entity": "product"
+    },
+    {
+      "name": "carts",
+      "url": "https://dummyjson.com/carts",
+      "entity": "order"
+    },
+    {
+      "name": "users",
+      "url": "https://dummyjson.com/users",
+      "entity": "user"
+    }
+  ]
+}
