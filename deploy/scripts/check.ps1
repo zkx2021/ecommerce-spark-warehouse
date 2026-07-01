@@ -4,6 +4,11 @@ $requiredPaths = @(
   "README.md",
   ".env.example",
   "docker-compose.yml",
+  "crawler/config/sources.json",
+  "backend/app/main.py",
+  "frontend/package.json",
+  "warehouse/README.md",
+  "docs/github-workflow.md",
   "deploy/hadoop/core-site.xml",
   "deploy/hadoop/hdfs-site.xml"
 )
@@ -14,4 +19,4 @@ foreach ($path in $requiredPaths) {
   }
 }
 
-Write-Host "Project foundation root check passed."
+Write-Host "Project foundation check passed."
