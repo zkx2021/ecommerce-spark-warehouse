@@ -30,10 +30,17 @@ services:
       MYSQL_DATABASE: ecommerce_ads
       MYSQL_USER: ecommerce
       MYSQL_PASSWORD: ecommerce_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     ports:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./deploy/mysql/init/01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
 
   spark-master:
     image: bitnami/spark:3.5
@@ -56,24 +63,29 @@ services:
   hive-metastore:
     image: apache/hive:4.0.0
     container_name: esw-hive-metastore
+    restart: unless-stopped
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: mysql
-      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/ecommerce_ads -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver -Djavax.jdo.option.ConnectionUserName=ecommerce -Djavax.jdo.option.ConnectionPassword=ecommerce_password"
+      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/hive_metastore -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver -Djavax.jdo.option.ConnectionUserName=ecommerce -Djavax.jdo.option.ConnectionPassword=ecommerce_password"
     depends_on:
-      - mysql
-      - namenode
+      mysql:
+        condition: service_healthy
+      namenode:
+        condition: service_started
     ports:
       - "9083:9083"
 
   hive-server2:
     image: apache/hive:4.0.0
     container_name: esw-hive-server2
+    restart: unless-stopped
     environment:
       SERVICE_NAME: hiveserver2
       HIVE_METASTORE_URI: thrift://hive-metastore:9083
     depends_on:
-      - hive-metastore
+      hive-metastore:
+        condition: service_started
     ports:
       - "10000:10000"
 
