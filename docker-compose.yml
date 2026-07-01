@@ -61,13 +61,19 @@ services:
       - spark-master
 
   hive-metastore:
-    image: apache/hive:4.0.0
+    build:
+      context: ./deploy/hive
+    image: ecommerce-hive:4.0.0-mysql
     container_name: esw-hive-metastore
     restart: unless-stopped
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: mysql
-      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/hive_metastore -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver -Djavax.jdo.option.ConnectionUserName=ecommerce -Djavax.jdo.option.ConnectionPassword=ecommerce_password"
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/hive_metastore
+        -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver
+        -Djavax.jdo.option.ConnectionUserName=ecommerce
+        -Djavax.jdo.option.ConnectionPassword=ecommerce_password
     depends_on:
       mysql:
         condition: service_healthy
@@ -77,12 +83,16 @@ services:
       - "9083:9083"
 
   hive-server2:
-    image: apache/hive:4.0.0
+    build:
+      context: ./deploy/hive
+    image: ecommerce-hive:4.0.0-mysql
     container_name: esw-hive-server2
     restart: unless-stopped
     environment:
       SERVICE_NAME: hiveserver2
-      HIVE_METASTORE_URI: thrift://hive-metastore:9083
+      IS_RESUME: "true"
+      SERVICE_OPTS: >-
+        -Dhive.metastore.uris=thrift://hive-metastore:9083
     depends_on:
       hive-metastore:
         condition: service_started
