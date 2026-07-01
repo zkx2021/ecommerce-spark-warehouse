@@ -1,3 +1,6 @@
+import json
+import subprocess
+import textwrap
 from pathlib import Path
 
 
@@ -66,19 +69,10 @@ def test_load_ods_script_registers_hive_partitions():
 
     assert "partitionsqlprefix" not in script
     assert "alter table $table add if not exists partition" in script
-    expected_partition_sql = []
     for table_name in ("ods_products", "ods_carts", "ods_users"):
         assert f'table = "{table_name}"' in script
-        expected_partition_sql.append(
-            f"alter table {table_name} add if not exists partition"
-        )
-    assert expected_partition_sql == [
-        "alter table ods_products add if not exists partition",
-        "alter table ods_carts add if not exists partition",
-        "alter table ods_users add if not exists partition",
-    ]
-    assert "invoke-compose exec" in script
-    assert "hdfs dfs -put -f" in script
+        assert f"alter table {table_name} add if not exists partition" in script
+    assert "invoke-compose -composeargs" in script
 
 
 def test_load_ods_script_checks_native_command_failures():
@@ -94,6 +88,95 @@ def test_load_ods_script_binds_docker_compose_to_project_root():
 
     assert "--project-directory" in script
     assert "$projectroot" in script
+    assert "valuefromremainingarguments" not in script
+
+
+def test_load_ods_script_invokes_compose_with_named_argument_arrays():
+    script = _read(LOAD_SCRIPT)
+
+    expected_calls = (
+        'invoke-compose -composeargs @("exec", "namenode", "mkdir", "-p", $containertmpdir)',
+        'invoke-compose -composeargs @("exec", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsdir)',
+        'invoke-compose -composeargs @("cp", $localpath, "namenode:$containertmppath")',
+        'invoke-compose -composeargs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", $containertmppath, $hdfspath)',
+        'invoke-compose -composeargs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionsql)',
+        'invoke-compose -composeargs @("exec", "namenode", "rm", "-rf", $containertmpdir)',
+    )
+
+    for expected_call in expected_calls:
+        assert expected_call in script
+
+
+def test_invoke_compose_preserves_dash_prefixed_native_arguments():
+    powershell = textwrap.dedent(
+        r"""
+        $ErrorActionPreference = "Stop"
+        $projectRoot = "D:\repo"
+        $script:Captured = @()
+
+        function Invoke-Native {
+          param(
+            [Parameter(Mandatory = $true)]
+            [string]$FilePath,
+
+            [Parameter(Mandatory = $true)]
+            [string[]]$Arguments
+          )
+
+          $script:Captured += [pscustomobject]@{
+            FilePath = $FilePath
+            Arguments = @($Arguments)
+          }
+        }
+
+        function Invoke-Compose {
+          param(
+            [Parameter(Mandatory = $true)]
+            [string[]]$ComposeArgs
+          )
+
+          Invoke-Native -FilePath "docker" -Arguments (@("compose", "--project-directory", $projectRoot) + $ComposeArgs)
+        }
+
+        Invoke-Compose -ComposeArgs @("exec", "namenode", "mkdir", "-p", "/tmp/ods-test")
+        Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", "/tmp/ods-test/products.jsonl", "/warehouse/ecommerce/ods/products/dt=1999-01-01/products.jsonl")
+        Invoke-Compose -ComposeArgs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION (dt='1999-01-01')")
+
+        $script:Captured | ConvertTo-Json -Depth 8 -Compress
+        """
+    )
+
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", powershell],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    captured = json.loads(result.stdout)
+    arguments = [entry["Arguments"] for entry in captured]
+
+    assert arguments[0] == [
+        "compose",
+        "--project-directory",
+        "D:\\repo",
+        "exec",
+        "namenode",
+        "mkdir",
+        "-p",
+        "/tmp/ods-test",
+    ]
+    assert arguments[1][-4:] == [
+        "-put",
+        "-f",
+        "/tmp/ods-test/products.jsonl",
+        "/warehouse/ecommerce/ods/products/dt=1999-01-01/products.jsonl",
+    ]
+    assert arguments[2][-4:] == [
+        "-u",
+        "jdbc:hive2://localhost:10000",
+        "-e",
+        "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION (dt='1999-01-01')",
+    ]
 
 
 def test_load_ods_script_uses_unique_container_tmp_dir_and_finally_cleanup():

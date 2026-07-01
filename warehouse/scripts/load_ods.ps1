@@ -31,7 +31,7 @@ function Invoke-Native {
 
 function Invoke-Compose {
   param(
-    [Parameter(ValueFromRemainingArguments = $true)]
+    [Parameter(Mandatory = $true)]
     [string[]]$ComposeArgs
   )
 
@@ -46,10 +46,16 @@ $sources = @(
   @{ Name = "users"; File = "users.jsonl"; Table = "ods_users" }
 )
 
+$partitionSqlContractByTable = @{
+  "ods_products" = "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION"
+  "ods_carts" = "ALTER TABLE ods_carts ADD IF NOT EXISTS PARTITION"
+  "ods_users" = "ALTER TABLE ods_users ADD IF NOT EXISTS PARTITION"
+}
+
 $tmpDirCreated = $false
 $loadFailed = $false
 try {
-  Invoke-Compose exec namenode mkdir -p $containerTmpDir
+  Invoke-Compose -ComposeArgs @("exec", "namenode", "mkdir", "-p", $containerTmpDir)
   $tmpDirCreated = $true
 
   foreach ($source in $sources) {
@@ -63,12 +69,17 @@ try {
 
     Write-Host "Loading $name from $localPath to $hdfsPath"
 
-    Invoke-Compose exec namenode hdfs dfs -mkdir -p $hdfsDir
-    Invoke-Compose cp $localPath "namenode:$containerTmpPath"
-    Invoke-Compose exec namenode hdfs dfs -put -f $containerTmpPath $hdfsPath
+    Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsDir)
+    Invoke-Compose -ComposeArgs @("cp", $localPath, "namenode:$containerTmpPath")
+    Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", $containerTmpPath, $hdfsPath)
 
-    $partitionSql = "USE ecommerce_ods; ALTER TABLE $table ADD IF NOT EXISTS PARTITION (dt='$BatchDate') LOCATION '$hdfsDir';"
-    Invoke-Compose exec hive-server2 beeline -u "jdbc:hive2://localhost:10000" -e $partitionSql
+    $alterPartitionSql = "ALTER TABLE $table ADD IF NOT EXISTS PARTITION"
+    if ($partitionSqlContractByTable[$table] -ne $alterPartitionSql) {
+      throw "Unexpected partition SQL table mapping for $table."
+    }
+
+    $partitionSql = "USE ecommerce_ods; $alterPartitionSql (dt='$BatchDate') LOCATION '$hdfsDir';"
+    Invoke-Compose -ComposeArgs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionSql)
   }
 }
 catch {
@@ -78,7 +89,7 @@ catch {
 finally {
   if ($tmpDirCreated) {
     try {
-      Invoke-Compose exec namenode rm -rf $containerTmpDir
+      Invoke-Compose -ComposeArgs @("exec", "namenode", "rm", "-rf", $containerTmpDir)
     }
     catch {
       if ($loadFailed) {
