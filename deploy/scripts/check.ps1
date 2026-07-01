@@ -3,7 +3,9 @@ $ErrorActionPreference = "Stop"
 $requiredPaths = @(
   "README.md",
   ".env.example",
-  "docker-compose.yml"
+  "docker-compose.yml",
+  "deploy/hadoop/core-site.xml",
+  "deploy/hadoop/hdfs-site.xml"
 )
 
 foreach ($path in $requiredPaths) {

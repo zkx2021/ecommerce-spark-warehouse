@@ -4,12 +4,21 @@ services:
   namenode:
     image: apache/hadoop:3.3.6
     container_name: esw-namenode
-    command: ["hdfs", "namenode"]
+    command:
+      - bash
+      - -c
+      - >-
+        if [ ! -d /tmp/hadoop-root/dfs/name/current ]; then
+          hdfs namenode -format -force -nonInteractive;
+        fi;
+        hdfs namenode
     ports:
       - "9870:9870"
       - "8020:8020"
     volumes:
       - namenode-data:/tmp/hadoop-root/dfs/name
+      - ./deploy/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./deploy/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
 
   datanode:
     image: apache/hadoop:3.3.6
@@ -21,6 +30,8 @@ services:
       - "9864:9864"
     volumes:
       - datanode-data:/tmp/hadoop-root/dfs/data
+      - ./deploy/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./deploy/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
 
   mysql:
     image: mysql:8.4
