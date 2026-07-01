@@ -1,0 +1,18 @@
+{
+  "name": "ecommerce-spark-warehouse-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "5.0.5",
+    "echarts": "5.5.0",
+    "vite": "5.3.1",
+    "vue": "3.4.29"
+  },
+  "devDependencies": {}
+}
