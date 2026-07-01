@@ -46,3 +46,26 @@ def test_check_ods_inputs_script_validates_all_sources():
     assert "crawler" in script
     assert "data" in script
     assert "processed" in script
+
+
+LOAD_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "load_ods.ps1"
+
+
+def test_load_ods_script_uses_expected_hdfs_partition_paths():
+    script = _read(LOAD_SCRIPT)
+
+    assert "/warehouse/ecommerce/ods" in script
+    assert "dt=$batchdate" in script
+    for source in ("products", "carts", "users"):
+        assert f'"{source}"' in script
+        assert f"{source}.jsonl" in script
+
+
+def test_load_ods_script_registers_hive_partitions():
+    script = _read(LOAD_SCRIPT)
+
+    assert "alter table ods_products add if not exists partition" in script
+    assert "alter table ods_carts add if not exists partition" in script
+    assert "alter table ods_users add if not exists partition" in script
+    assert "docker compose exec" in script
+    assert "hdfs dfs -put -f" in script
