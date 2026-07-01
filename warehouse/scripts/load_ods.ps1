@@ -6,36 +6,85 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $checkScript = Join-Path $projectRoot "warehouse\scripts\check_ods_inputs.ps1"
 $processedDir = Join-Path $projectRoot "crawler\data\processed\$BatchDate"
 $hdfsBase = "/warehouse/ecommerce/ods"
+$runId = "ods-$BatchDate-$PID"
+$containerTmpDir = "/tmp/$runId"
+
+function Invoke-Native {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath,
+
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments
+  )
+
+  & $FilePath @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    $displayCommand = ((@($FilePath) + $Arguments) -join " ")
+    throw "Native command failed with exit code ${LASTEXITCODE}: $displayCommand"
+  }
+}
+
+function Invoke-Compose {
+  param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ComposeArgs
+  )
+
+  Invoke-Native -FilePath "docker" -Arguments (@("compose", "--project-directory", $projectRoot) + $ComposeArgs)
+}
 
 & $checkScript -BatchDate $BatchDate
 
 $sources = @(
-  @{ Name = "products"; File = "products.jsonl"; Table = "ods_products"; PartitionSqlPrefix = "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION" },
-  @{ Name = "carts"; File = "carts.jsonl"; Table = "ods_carts"; PartitionSqlPrefix = "ALTER TABLE ods_carts ADD IF NOT EXISTS PARTITION" },
-  @{ Name = "users"; File = "users.jsonl"; Table = "ods_users"; PartitionSqlPrefix = "ALTER TABLE ods_users ADD IF NOT EXISTS PARTITION" }
+  @{ Name = "products"; File = "products.jsonl"; Table = "ods_products" },
+  @{ Name = "carts"; File = "carts.jsonl"; Table = "ods_carts" },
+  @{ Name = "users"; File = "users.jsonl"; Table = "ods_users" }
 )
 
-foreach ($source in $sources) {
-  $name = $source.Name
-  $table = $source.Table
-  $file = $source.File
-  $localPath = Join-Path $processedDir $file
-  $hdfsDir = "$hdfsBase/$name/dt=$BatchDate"
-  $hdfsPath = "$hdfsDir/$file"
+$partitionSqlContractByTable = @{
+  "ods_products" = "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION"
+  "ods_carts" = "ALTER TABLE ods_carts ADD IF NOT EXISTS PARTITION"
+  "ods_users" = "ALTER TABLE ods_users ADD IF NOT EXISTS PARTITION"
+}
 
-  Write-Host "Loading $name from $localPath to $hdfsPath"
+$tmpDirCreated = $false
+try {
+  Invoke-Compose exec namenode mkdir -p $containerTmpDir
+  $tmpDirCreated = $true
 
-  docker compose exec namenode hdfs dfs -mkdir -p $hdfsDir
-  docker compose cp $localPath "namenode:/tmp/$file"
-  docker compose exec namenode hdfs dfs -put -f "/tmp/$file" $hdfsPath
-  docker compose exec namenode rm -f "/tmp/$file"
+  foreach ($source in $sources) {
+    $name = $source.Name
+    $table = $source.Table
+    $file = $source.File
+    $localPath = Join-Path $processedDir $file
+    $hdfsDir = "$hdfsBase/$name/dt=$BatchDate"
+    $hdfsPath = "$hdfsDir/$file"
+    $containerTmpPath = "$containerTmpDir/$file"
 
-  $partitionSql = "USE ecommerce_ods; $($source.PartitionSqlPrefix) (dt='$BatchDate') LOCATION '$hdfsDir';"
-  docker compose exec hive-server2 beeline -u "jdbc:hive2://localhost:10000" -e $partitionSql
+    Write-Host "Loading $name from $localPath to $hdfsPath"
+
+    Invoke-Compose exec namenode hdfs dfs -mkdir -p $hdfsDir
+    Invoke-Compose cp $localPath "namenode:$containerTmpPath"
+    Invoke-Compose exec namenode hdfs dfs -put -f $containerTmpPath $hdfsPath
+
+    $alterPartitionSql = "ALTER TABLE $table ADD IF NOT EXISTS PARTITION"
+    if ($partitionSqlContractByTable[$table] -ne $alterPartitionSql) {
+      throw "Unexpected partition SQL table mapping for $table."
+    }
+
+    $partitionSql = "USE ecommerce_ods; $alterPartitionSql (dt='$BatchDate') LOCATION '$hdfsDir';"
+    Invoke-Compose exec hive-server2 beeline -u "jdbc:hive2://localhost:10000" -e $partitionSql
+  }
+}
+finally {
+  if ($tmpDirCreated) {
+    Invoke-Compose exec namenode rm -rf $containerTmpDir
+  }
 }
 
 Write-Host "ODS load completed for batch date $BatchDate."

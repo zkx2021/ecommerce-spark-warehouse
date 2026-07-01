@@ -64,8 +64,33 @@ def test_load_ods_script_uses_expected_hdfs_partition_paths():
 def test_load_ods_script_registers_hive_partitions():
     script = _read(LOAD_SCRIPT)
 
-    assert "alter table ods_products add if not exists partition" in script
-    assert "alter table ods_carts add if not exists partition" in script
-    assert "alter table ods_users add if not exists partition" in script
-    assert "docker compose exec" in script
+    assert "partitionsqlprefix" not in script
+    assert "alter table $table add if not exists partition" in script
+    for table_name in ("ods_products", "ods_carts", "ods_users"):
+        assert f'table = "{table_name}"' in script
+        assert f"alter table {table_name} add if not exists partition" in script
+    assert "invoke-compose exec" in script
     assert "hdfs dfs -put -f" in script
+
+
+def test_load_ods_script_checks_native_command_failures():
+    script = _read(LOAD_SCRIPT)
+
+    assert "function invoke-native" in script
+    assert "$lastexitcode" in script
+    assert "throw" in script
+
+
+def test_load_ods_script_binds_docker_compose_to_project_root():
+    script = _read(LOAD_SCRIPT)
+
+    assert "--project-directory" in script
+    assert "$projectroot" in script
+
+
+def test_load_ods_script_uses_unique_container_tmp_dir_and_finally_cleanup():
+    script = _read(LOAD_SCRIPT)
+
+    assert "$runid" in script
+    assert "/tmp/$runid" in script
+    assert "finally" in script
