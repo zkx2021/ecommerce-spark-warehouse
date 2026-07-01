@@ -66,9 +66,17 @@ def test_load_ods_script_registers_hive_partitions():
 
     assert "partitionsqlprefix" not in script
     assert "alter table $table add if not exists partition" in script
+    expected_partition_sql = []
     for table_name in ("ods_products", "ods_carts", "ods_users"):
         assert f'table = "{table_name}"' in script
-        assert f"alter table {table_name} add if not exists partition" in script
+        expected_partition_sql.append(
+            f"alter table {table_name} add if not exists partition"
+        )
+    assert expected_partition_sql == [
+        "alter table ods_products add if not exists partition",
+        "alter table ods_carts add if not exists partition",
+        "alter table ods_users add if not exists partition",
+    ]
     assert "invoke-compose exec" in script
     assert "hdfs dfs -put -f" in script
 
