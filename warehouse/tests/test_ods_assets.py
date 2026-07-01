@@ -30,3 +30,19 @@ def test_ods_sql_points_to_expected_hdfs_locations():
     assert "location '/warehouse/ecommerce/ods/products'" in sql
     assert "location '/warehouse/ecommerce/ods/carts'" in sql
     assert "location '/warehouse/ecommerce/ods/users'" in sql
+
+
+CHECK_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "check_ods_inputs.ps1"
+
+
+def test_check_ods_inputs_script_validates_all_sources():
+    script = _read(CHECK_SCRIPT)
+
+    assert "param(" in script
+    assert "$batchdate" in script
+    for source in ("products", "carts", "users"):
+        assert f'"{source}"' in script
+        assert f'{source}.jsonl' in script
+    assert "crawler" in script
+    assert "data" in script
+    assert "processed" in script
