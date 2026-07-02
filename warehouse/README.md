@@ -38,6 +38,26 @@ Load the batch files into HDFS and register Hive partitions:
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/load_ods.ps1 -BatchDate 2026-07-01
 ```
 
+## DWD Batch Flow
+
+Create or refresh the DWD Hive tables:
+
+```powershell
+Get-Content -Raw warehouse/hive/dwd/create_dwd_tables.sql | docker compose exec -T hive-server2 beeline -u "jdbc:hive2://localhost:10000"
+```
+
+Run the Spark DWD batch for the same date after ODS files are loaded:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_dwd.ps1 -BatchDate 2026-07-01
+```
+
+The DWD batch reads `ecommerce_ods` partitions for the requested date and writes:
+
+- `ecommerce_dwd.dwd_product_info`
+- `ecommerce_dwd.dwd_user_info`
+- `ecommerce_dwd.dwd_order_cart_detail`
+
 ## HDFS ODS Paths
 
 Expected ODS landing paths use one partition directory per source and batch date:
@@ -45,3 +65,11 @@ Expected ODS landing paths use one partition directory per source and batch date
 - `/warehouse/ecommerce/ods/products/dt=2026-07-01/products.jsonl`
 - `/warehouse/ecommerce/ods/carts/dt=2026-07-01/carts.jsonl`
 - `/warehouse/ecommerce/ods/users/dt=2026-07-01/users.jsonl`
+
+## HDFS DWD Paths
+
+Expected DWD table locations are:
+
+- `/warehouse/ecommerce/dwd/product_info`
+- `/warehouse/ecommerce/dwd/user_info`
+- `/warehouse/ecommerce/dwd/order_cart_detail`
