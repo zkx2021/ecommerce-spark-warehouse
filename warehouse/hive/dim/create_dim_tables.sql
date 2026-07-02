@@ -15,7 +15,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dim_date (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dim/dim_date';
+LOCATION '/warehouse/ecommerce/dim/date';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dim_product (
   product_id BIGINT,
@@ -28,7 +28,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dim_product (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dim/dim_product';
+LOCATION '/warehouse/ecommerce/dim/product';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dim_category (
   category_id STRING,
@@ -37,7 +37,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dim_category (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dim/dim_category';
+LOCATION '/warehouse/ecommerce/dim/category';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dim_user (
   user_id BIGINT,
@@ -52,4 +52,4 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dim_user (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dim/dim_user';
+LOCATION '/warehouse/ecommerce/dim/user';

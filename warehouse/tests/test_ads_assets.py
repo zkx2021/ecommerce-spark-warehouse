@@ -28,6 +28,15 @@ def test_dim_sql_creates_database_tables_and_partitions():
         assert column in sql
 
 
+def test_dim_sql_points_to_expected_hdfs_locations():
+    sql = _read(DIM_SQL)
+
+    assert "location '/warehouse/ecommerce/dim/date'" in sql
+    assert "location '/warehouse/ecommerce/dim/product'" in sql
+    assert "location '/warehouse/ecommerce/dim/category'" in sql
+    assert "location '/warehouse/ecommerce/dim/user'" in sql
+
+
 def test_dws_sql_creates_subject_summary_tables():
     sql = _read(DWS_SQL)
 
@@ -49,6 +58,16 @@ def test_dws_sql_creates_subject_summary_tables():
         "stored as parquet",
     ):
         assert column in sql
+
+
+def test_dws_sql_points_to_expected_hdfs_locations():
+    sql = _read(DWS_SQL)
+
+    assert "location '/warehouse/ecommerce/dws/sales_daily'" in sql
+    assert "location '/warehouse/ecommerce/dws/product_daily'" in sql
+    assert "location '/warehouse/ecommerce/dws/category_daily'" in sql
+    assert "location '/warehouse/ecommerce/dws/user_profile_daily'" in sql
+    assert "location '/warehouse/ecommerce/dws/funnel_daily'" in sql
 
 
 def test_ads_sql_creates_dashboard_tables():
@@ -73,3 +92,14 @@ def test_ads_sql_creates_dashboard_tables():
         "stored as parquet",
     ):
         assert column in sql
+
+
+def test_ads_sql_points_to_expected_hdfs_locations():
+    sql = _read(ADS_SQL)
+
+    assert "location '/warehouse/ecommerce/ads/kpi_daily'" in sql
+    assert "location '/warehouse/ecommerce/ads/sales_trend_daily'" in sql
+    assert "location '/warehouse/ecommerce/ads/product_rank_daily'" in sql
+    assert "location '/warehouse/ecommerce/ads/category_share_daily'" in sql
+    assert "location '/warehouse/ecommerce/ads/user_profile_daily'" in sql
+    assert "location '/warehouse/ecommerce/ads/funnel_daily'" in sql

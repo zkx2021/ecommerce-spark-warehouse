@@ -13,7 +13,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dws_sales_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dws/dws_sales_daily';
+LOCATION '/warehouse/ecommerce/dws/sales_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dws_product_daily (
   date_id STRING,
@@ -27,7 +27,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dws_product_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dws/dws_product_daily';
+LOCATION '/warehouse/ecommerce/dws/product_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dws_category_daily (
   date_id STRING,
@@ -39,7 +39,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dws_category_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dws/dws_category_daily';
+LOCATION '/warehouse/ecommerce/dws/category_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dws_user_profile_daily (
   date_id STRING,
@@ -53,7 +53,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dws_user_profile_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dws/dws_user_profile_daily';
+LOCATION '/warehouse/ecommerce/dws/user_profile_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS dws_funnel_daily (
   date_id STRING,
@@ -67,4 +67,4 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dws_funnel_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/dws/dws_funnel_daily';
+LOCATION '/warehouse/ecommerce/dws/funnel_daily';

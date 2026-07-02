@@ -12,7 +12,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_kpi_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_kpi_daily';
+LOCATION '/warehouse/ecommerce/ads/kpi_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS ads_sales_trend_daily (
   date_id STRING,
@@ -22,7 +22,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_sales_trend_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_sales_trend_daily';
+LOCATION '/warehouse/ecommerce/ads/sales_trend_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS ads_product_rank_daily (
   date_id STRING,
@@ -35,7 +35,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_product_rank_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_product_rank_daily';
+LOCATION '/warehouse/ecommerce/ads/product_rank_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS ads_category_share_daily (
   date_id STRING,
@@ -46,7 +46,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_category_share_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_category_share_daily';
+LOCATION '/warehouse/ecommerce/ads/category_share_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS ads_user_profile_daily (
   date_id STRING,
@@ -58,7 +58,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_user_profile_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_user_profile_daily';
+LOCATION '/warehouse/ecommerce/ads/user_profile_daily';
 
 CREATE EXTERNAL TABLE IF NOT EXISTS ads_funnel_daily (
   date_id STRING,
@@ -69,4 +69,4 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ads_funnel_daily (
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET
-LOCATION '/warehouse/ecommerce/ads/ads_funnel_daily';
+LOCATION '/warehouse/ecommerce/ads/funnel_daily';
