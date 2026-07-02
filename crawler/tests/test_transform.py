@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from crawler.app.config import Source
@@ -20,13 +22,13 @@ def test_transform_payload_creates_jsonl_ready_rows():
             "entity": "product",
             "source": "products",
             "batch_date": "2026-07-01",
-            "data": {"id": 1, "title": "Phone"},
+            "data": json.dumps({"id": 1, "title": "Phone"}, ensure_ascii=False),
         },
         {
             "entity": "product",
             "source": "products",
             "batch_date": "2026-07-01",
-            "data": {"id": 2, "title": "Laptop"},
+            "data": json.dumps({"id": 2, "title": "Laptop"}, ensure_ascii=False),
         },
     ]
 
