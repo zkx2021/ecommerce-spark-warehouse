@@ -195,7 +195,11 @@ def test_warehouse_readme_documents_ods_flow():
     readme = _read(WAREHOUSE_README)
 
     assert "ods" in readme
+    assert "python crawler/run.py --batch-date 2026-07-01" in readme
     assert "check_ods_inputs.ps1" in readme
+    assert "docker compose exec hive-server2" in readme
+    assert "beeline" in readme
+    assert "create_ods_tables.sql" in readme
     assert "load_ods.ps1" in readme
     assert "/warehouse/ecommerce/ods" in readme
 
