@@ -57,7 +57,7 @@ def test_run_ingestion_writes_raw_and_processed_files(tmp_path):
         "entity": "product",
         "source": "products",
         "batch_date": "2026-07-01",
-        "data": {"id": 1, "title": "Phone"},
+        "data": json.dumps({"id": 1, "title": "Phone"}, ensure_ascii=False),
     }
 
 

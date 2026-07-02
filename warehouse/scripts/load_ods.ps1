@@ -55,7 +55,7 @@ $partitionSqlContractByTable = @{
 $tmpDirCreated = $false
 $loadFailed = $false
 try {
-  Invoke-Compose -ComposeArgs @("exec", "namenode", "mkdir", "-p", $containerTmpDir)
+  Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "mkdir", "-p", $containerTmpDir)
   $tmpDirCreated = $true
 
   foreach ($source in $sources) {
@@ -69,9 +69,9 @@ try {
 
     Write-Host "Loading $name from $localPath to $hdfsPath"
 
-    Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsDir)
+    Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsDir)
     Invoke-Compose -ComposeArgs @("cp", $localPath, "namenode:$containerTmpPath")
-    Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", $containerTmpPath, $hdfsPath)
+    Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "hdfs", "dfs", "-put", "-f", $containerTmpPath, $hdfsPath)
 
     $alterPartitionSql = "ALTER TABLE $table ADD IF NOT EXISTS PARTITION"
     if ($partitionSqlContractByTable[$table] -ne $alterPartitionSql) {
@@ -79,7 +79,7 @@ try {
     }
 
     $partitionSql = "USE ecommerce_ods; $alterPartitionSql (dt='$BatchDate') LOCATION '$hdfsDir';"
-    Invoke-Compose -ComposeArgs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionSql)
+    Invoke-Compose -ComposeArgs @("exec", "-T", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionSql)
   }
 }
 catch {
@@ -89,7 +89,7 @@ catch {
 finally {
   if ($tmpDirCreated) {
     try {
-      Invoke-Compose -ComposeArgs @("exec", "namenode", "rm", "-rf", $containerTmpDir)
+      Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "rm", "-rf", $containerTmpDir)
     }
     catch {
       if ($loadFailed) {

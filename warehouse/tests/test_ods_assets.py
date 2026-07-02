@@ -95,12 +95,12 @@ def test_load_ods_script_invokes_compose_with_named_argument_arrays():
     script = _read(LOAD_SCRIPT)
 
     expected_calls = (
-        'invoke-compose -composeargs @("exec", "namenode", "mkdir", "-p", $containertmpdir)',
-        'invoke-compose -composeargs @("exec", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsdir)',
+        'invoke-compose -composeargs @("exec", "-t", "namenode", "mkdir", "-p", $containertmpdir)',
+        'invoke-compose -composeargs @("exec", "-t", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsdir)',
         'invoke-compose -composeargs @("cp", $localpath, "namenode:$containertmppath")',
-        'invoke-compose -composeargs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", $containertmppath, $hdfspath)',
-        'invoke-compose -composeargs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionsql)',
-        'invoke-compose -composeargs @("exec", "namenode", "rm", "-rf", $containertmpdir)',
+        'invoke-compose -composeargs @("exec", "-t", "namenode", "hdfs", "dfs", "-put", "-f", $containertmppath, $hdfspath)',
+        'invoke-compose -composeargs @("exec", "-t", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionsql)',
+        'invoke-compose -composeargs @("exec", "-t", "namenode", "rm", "-rf", $containertmpdir)',
     )
 
     for expected_call in expected_calls:
@@ -138,9 +138,9 @@ def test_invoke_compose_preserves_dash_prefixed_native_arguments():
           Invoke-Native -FilePath "docker" -Arguments (@("compose", "--project-directory", $projectRoot) + $ComposeArgs)
         }
 
-        Invoke-Compose -ComposeArgs @("exec", "namenode", "mkdir", "-p", "/tmp/ods-test")
-        Invoke-Compose -ComposeArgs @("exec", "namenode", "hdfs", "dfs", "-put", "-f", "/tmp/ods-test/products.jsonl", "/warehouse/ecommerce/ods/products/dt=1999-01-01/products.jsonl")
-        Invoke-Compose -ComposeArgs @("exec", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION (dt='1999-01-01')")
+        Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "mkdir", "-p", "/tmp/ods-test")
+        Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "hdfs", "dfs", "-put", "-f", "/tmp/ods-test/products.jsonl", "/warehouse/ecommerce/ods/products/dt=1999-01-01/products.jsonl")
+        Invoke-Compose -ComposeArgs @("exec", "-T", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", "ALTER TABLE ods_products ADD IF NOT EXISTS PARTITION (dt='1999-01-01')")
 
         $script:Captured | ConvertTo-Json -Depth 8 -Compress
         """
@@ -160,6 +160,7 @@ def test_invoke_compose_preserves_dash_prefixed_native_arguments():
         "--project-directory",
         "D:\\repo",
         "exec",
+        "-T",
         "namenode",
         "mkdir",
         "-p",

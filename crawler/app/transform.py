@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 from crawler.app.config import Source
@@ -13,7 +14,7 @@ def transform_payload(source: Source, payload: dict[str, Any], batch_date: str) 
             "entity": source.entity,
             "source": source.name,
             "batch_date": batch_date,
-            "data": item,
+            "data": json.dumps(item, ensure_ascii=False),
         }
         for item in items
     ]
