@@ -172,15 +172,15 @@ def test_load_ods_script_binds_docker_compose_to_project_root():
 
 
 def test_load_ods_script_invokes_compose_with_named_argument_arrays():
-    script = _read(LOAD_SCRIPT)
+    script = LOAD_SCRIPT.read_text(encoding="utf-8")
 
     expected_calls = (
-        'invoke-compose -composeargs @("exec", "-t", "namenode", "mkdir", "-p", $containertmpdir)',
-        'invoke-compose -composeargs @("exec", "-t", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsdir)',
-        'invoke-compose -composeargs @("cp", $localpath, "namenode:$containertmppath")',
-        'invoke-compose -composeargs @("exec", "-t", "namenode", "hdfs", "dfs", "-put", "-f", $containertmppath, $hdfspath)',
-        'invoke-compose -composeargs @("exec", "-t", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionsql)',
-        'invoke-compose -composeargs @("exec", "-t", "namenode", "rm", "-rf", $containertmpdir)',
+        'Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "mkdir", "-p", $containerTmpDir)',
+        'Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "hdfs", "dfs", "-mkdir", "-p", $hdfsDir)',
+        'Invoke-Compose -ComposeArgs @("cp", $localPath, "namenode:$containerTmpPath")',
+        'Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "hdfs", "dfs", "-put", "-f", $containerTmpPath, $hdfsPath)',
+        'Invoke-Compose -ComposeArgs @("exec", "-T", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-e", $partitionSql)',
+        'Invoke-Compose -ComposeArgs @("exec", "-T", "namenode", "rm", "-rf", $containerTmpDir)',
     )
 
     for expected_call in expected_calls:
