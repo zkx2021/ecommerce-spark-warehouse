@@ -51,6 +51,86 @@ def test_check_ods_inputs_script_validates_all_sources():
     assert "processed" in script
 
 
+def _copy_check_script_project(tmp_path: Path) -> Path:
+    script_dir = tmp_path / "warehouse" / "scripts"
+    script_dir.mkdir(parents=True)
+    script_path = script_dir / "check_ods_inputs.ps1"
+    script_path.write_text(CHECK_SCRIPT.read_text(encoding="utf-8"), encoding="utf-8")
+    return script_path
+
+
+def _write_processed_batch(tmp_path: Path, batch_date: str, overrides: dict[str, dict] | None = None) -> None:
+    overrides = overrides or {}
+    rows = {
+        "products": {"entity": "product", "source": "products", "batch_date": batch_date, "data": '{"id":1}'},
+        "carts": {"entity": "order", "source": "carts", "batch_date": batch_date, "data": '{"id":10}'},
+        "users": {"entity": "user", "source": "users", "batch_date": batch_date, "data": '{"id":100}'},
+    }
+    processed_dir = tmp_path / "crawler" / "data" / "processed" / batch_date
+    processed_dir.mkdir(parents=True)
+
+    for source, row in rows.items():
+        row.update(overrides.get(source, {}))
+        (processed_dir / f"{source}.jsonl").write_text(
+            json.dumps(row, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+
+def _run_check_script(script_path: Path, batch_date: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script_path),
+            "-BatchDate",
+            batch_date,
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_check_ods_inputs_accepts_valid_jsonl_contract(tmp_path):
+    batch_date = "1999-01-01"
+    script_path = _copy_check_script_project(tmp_path)
+    _write_processed_batch(tmp_path, batch_date)
+
+    result = _run_check_script(script_path, batch_date)
+
+    assert result.returncode == 0, result.stderr
+    assert "ODS input check passed" in result.stdout
+
+
+def test_check_ods_inputs_rejects_non_string_data(tmp_path):
+    batch_date = "1999-01-01"
+    script_path = _copy_check_script_project(tmp_path)
+    _write_processed_batch(tmp_path, batch_date, {"products": {"data": {"id": 1}}})
+
+    result = _run_check_script(script_path, batch_date)
+
+    assert result.returncode != 0
+    assert "data must be a JSON string" in result.stderr
+
+
+def test_check_ods_inputs_rejects_wrong_source_and_batch_date(tmp_path):
+    batch_date = "1999-01-01"
+    script_path = _copy_check_script_project(tmp_path)
+    _write_processed_batch(
+        tmp_path,
+        batch_date,
+        {"products": {"source": "users"}, "carts": {"batch_date": "1999-01-02"}},
+    )
+
+    result = _run_check_script(script_path, batch_date)
+
+    assert result.returncode != 0
+    assert "source mismatch" in result.stderr
+
+
 LOAD_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "load_ods.ps1"
 
 

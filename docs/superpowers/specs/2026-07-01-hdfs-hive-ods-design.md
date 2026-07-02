@@ -51,9 +51,7 @@ Each JSONL line has this logical shape:
   "entity": "product",
   "source": "products",
   "batch_date": "2026-07-01",
-  "data": {
-    "id": 1
-  }
+  "data": "{\"id\":1}"
 }
 ```
 
@@ -119,7 +117,7 @@ python crawler/run.py --batch-date 2026-07-01
 3. Create Hive ODS tables:
 
 ```powershell
-docker compose exec hive-server2 beeline -u jdbc:hive2://localhost:10000 -f /workspace/warehouse/hive/ods/create_ods_tables.sql
+Get-Content -Raw warehouse/hive/ods/create_ods_tables.sql | docker compose exec -T hive-server2 beeline -u "jdbc:hive2://localhost:10000"
 ```
 
 4. Load the batch:
