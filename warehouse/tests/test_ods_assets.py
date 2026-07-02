@@ -193,13 +193,16 @@ FOUNDATION_CHECK = PROJECT_ROOT / "deploy" / "scripts" / "check.ps1"
 
 def test_warehouse_readme_documents_ods_flow():
     readme = _read(WAREHOUSE_README)
+    raw_readme = WAREHOUSE_README.read_text(encoding="utf-8")
 
     assert "ods" in readme
     assert "python crawler/run.py --batch-date 2026-07-01" in readme
     assert "check_ods_inputs.ps1" in readme
-    assert "docker compose exec hive-server2" in readme
+    assert "docker compose exec -T hive-server2" in raw_readme
     assert "beeline" in readme
     assert "create_ods_tables.sql" in readme
+    assert "get-content -raw warehouse/hive/ods/create_ods_tables.sql" in readme
+    assert "/workspace/warehouse/hive/ods/create_ods_tables.sql" not in readme
     assert "load_ods.ps1" in readme
     assert "/warehouse/ecommerce/ods" in readme
 

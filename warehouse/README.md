@@ -29,7 +29,7 @@ powershell -ExecutionPolicy Bypass -File warehouse/scripts/check_ods_inputs.ps1 
 Create or refresh the ODS Hive tables:
 
 ```powershell
-docker compose exec hive-server2 beeline -u "jdbc:hive2://localhost:10000" -f /workspace/warehouse/hive/ods/create_ods_tables.sql
+Get-Content -Raw warehouse/hive/ods/create_ods_tables.sql | docker compose exec -T hive-server2 beeline -u "jdbc:hive2://localhost:10000"
 ```
 
 Load the batch files into HDFS and register Hive partitions:
