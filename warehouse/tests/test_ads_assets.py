@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -9,6 +10,16 @@ ADS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "ads" / "create_ads_tables.sql"
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8").lower()
+
+
+def _table_locations(sql: str) -> dict[str, str]:
+    return dict(
+        re.findall(
+            r"create external table if not exists\s+(\w+).*?location\s+'([^']+)';",
+            sql,
+            flags=re.DOTALL,
+        )
+    )
 
 
 def test_dim_sql_creates_database_tables_and_partitions():
@@ -31,10 +42,12 @@ def test_dim_sql_creates_database_tables_and_partitions():
 def test_dim_sql_points_to_expected_hdfs_locations():
     sql = _read(DIM_SQL)
 
-    assert "location '/warehouse/ecommerce/dim/date'" in sql
-    assert "location '/warehouse/ecommerce/dim/product'" in sql
-    assert "location '/warehouse/ecommerce/dim/category'" in sql
-    assert "location '/warehouse/ecommerce/dim/user'" in sql
+    assert _table_locations(sql) == {
+        "dim_date": "/warehouse/ecommerce/dim/date",
+        "dim_product": "/warehouse/ecommerce/dim/product",
+        "dim_category": "/warehouse/ecommerce/dim/category",
+        "dim_user": "/warehouse/ecommerce/dim/user",
+    }
 
 
 def test_dws_sql_creates_subject_summary_tables():
@@ -63,11 +76,13 @@ def test_dws_sql_creates_subject_summary_tables():
 def test_dws_sql_points_to_expected_hdfs_locations():
     sql = _read(DWS_SQL)
 
-    assert "location '/warehouse/ecommerce/dws/sales_daily'" in sql
-    assert "location '/warehouse/ecommerce/dws/product_daily'" in sql
-    assert "location '/warehouse/ecommerce/dws/category_daily'" in sql
-    assert "location '/warehouse/ecommerce/dws/user_profile_daily'" in sql
-    assert "location '/warehouse/ecommerce/dws/funnel_daily'" in sql
+    assert _table_locations(sql) == {
+        "dws_sales_daily": "/warehouse/ecommerce/dws/sales_daily",
+        "dws_product_daily": "/warehouse/ecommerce/dws/product_daily",
+        "dws_category_daily": "/warehouse/ecommerce/dws/category_daily",
+        "dws_user_profile_daily": "/warehouse/ecommerce/dws/user_profile_daily",
+        "dws_funnel_daily": "/warehouse/ecommerce/dws/funnel_daily",
+    }
 
 
 def test_ads_sql_creates_dashboard_tables():
@@ -97,9 +112,11 @@ def test_ads_sql_creates_dashboard_tables():
 def test_ads_sql_points_to_expected_hdfs_locations():
     sql = _read(ADS_SQL)
 
-    assert "location '/warehouse/ecommerce/ads/kpi_daily'" in sql
-    assert "location '/warehouse/ecommerce/ads/sales_trend_daily'" in sql
-    assert "location '/warehouse/ecommerce/ads/product_rank_daily'" in sql
-    assert "location '/warehouse/ecommerce/ads/category_share_daily'" in sql
-    assert "location '/warehouse/ecommerce/ads/user_profile_daily'" in sql
-    assert "location '/warehouse/ecommerce/ads/funnel_daily'" in sql
+    assert _table_locations(sql) == {
+        "ads_kpi_daily": "/warehouse/ecommerce/ads/kpi_daily",
+        "ads_sales_trend_daily": "/warehouse/ecommerce/ads/sales_trend_daily",
+        "ads_product_rank_daily": "/warehouse/ecommerce/ads/product_rank_daily",
+        "ads_category_share_daily": "/warehouse/ecommerce/ads/category_share_daily",
+        "ads_user_profile_daily": "/warehouse/ecommerce/ads/user_profile_daily",
+        "ads_funnel_daily": "/warehouse/ecommerce/ads/funnel_daily",
+    }
