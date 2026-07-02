@@ -8,6 +8,9 @@ $requiredPaths = @(
   "backend/app/main.py",
   "frontend/package.json",
   "warehouse/README.md",
+  "warehouse/hive/ods/create_ods_tables.sql",
+  "warehouse/scripts/check_ods_inputs.ps1",
+  "warehouse/scripts/load_ods.ps1",
   "docs/github-workflow.md",
   "deploy/hadoop/core-site.xml",
   "deploy/hadoop/hdfs-site.xml"

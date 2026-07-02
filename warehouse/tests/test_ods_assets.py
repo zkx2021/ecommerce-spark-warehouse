@@ -185,3 +185,24 @@ def test_load_ods_script_uses_unique_container_tmp_dir_and_finally_cleanup():
     assert "$runid" in script
     assert "/tmp/$runid" in script
     assert "finally" in script
+
+
+WAREHOUSE_README = PROJECT_ROOT / "warehouse" / "README.md"
+FOUNDATION_CHECK = PROJECT_ROOT / "deploy" / "scripts" / "check.ps1"
+
+
+def test_warehouse_readme_documents_ods_flow():
+    readme = _read(WAREHOUSE_README)
+
+    assert "ods" in readme
+    assert "check_ods_inputs.ps1" in readme
+    assert "load_ods.ps1" in readme
+    assert "/warehouse/ecommerce/ods" in readme
+
+
+def test_foundation_check_includes_ods_assets():
+    script = _read(FOUNDATION_CHECK)
+
+    assert "warehouse/hive/ods/create_ods_tables.sql" in script
+    assert "warehouse/scripts/check_ods_inputs.ps1" in script
+    assert "warehouse/scripts/load_ods.ps1" in script
