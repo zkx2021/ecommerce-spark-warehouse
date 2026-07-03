@@ -10,6 +10,9 @@ MYSQL_ADS_SQL = PROJECT_ROOT / "deploy" / "mysql" / "init" / "02-create-ads-tabl
 DOCKER_COMPOSE = PROJECT_ROOT / "docker-compose.yml"
 RUN_ADS_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "run_ads.ps1"
 EXPORT_ADS_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "export_ads_mysql.ps1"
+FOUNDATION_CHECK = PROJECT_ROOT / "deploy" / "scripts" / "check.ps1"
+WAREHOUSE_README = PROJECT_ROOT / "warehouse" / "README.md"
+ROOT_README = PROJECT_ROOT / "README.md"
 
 
 def _read(path: Path) -> str:
@@ -254,3 +257,35 @@ def test_export_ads_mysql_script_defaults_to_compose_mysql_password():
     assert f'$password = "{compose_password}"' in script
     assert "--password" in script
     assert "$password" in script
+
+
+def test_foundation_check_includes_ads_runtime_assets():
+    script = _read(FOUNDATION_CHECK)
+
+    for path in (
+        "warehouse/hive/dim/create_dim_tables.sql",
+        "warehouse/hive/dws/create_dws_tables.sql",
+        "warehouse/hive/ads/create_ads_tables.sql",
+        "deploy/mysql/init/02-create-ads-tables.sql",
+        "warehouse/spark/jobs/ads_job.py",
+        "warehouse/spark/jobs/ads_sql.py",
+        "warehouse/scripts/run_ads.ps1",
+        "warehouse/scripts/export_ads_mysql.ps1",
+        "warehouse/scripts/export_ads_mysql.py",
+    ):
+        assert path in script
+
+
+def test_readmes_document_ads_batch_flow():
+    warehouse_readme = _read(WAREHOUSE_README)
+    root_readme = _read(ROOT_README)
+
+    assert "dim/dws/ads batch flow" in warehouse_readme
+    assert "run_ads.ps1" in warehouse_readme
+    assert "export_ads_mysql.ps1" in warehouse_readme
+    assert "ecommerce_dim" in warehouse_readme
+    assert "ecommerce_dws" in warehouse_readme
+    assert "ecommerce_ads" in warehouse_readme
+    assert "ods -> dwd -> dim -> dws -> ads -> mysql" in warehouse_readme
+    assert "warehouse/data/ads/<batch-date>/" in warehouse_readme
+    assert "dim, dws, ads" in root_readme
