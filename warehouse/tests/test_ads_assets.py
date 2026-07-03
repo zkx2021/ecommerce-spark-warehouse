@@ -172,6 +172,7 @@ def test_mysql_init_directory_is_mounted_for_entrypoint_scripts():
 
 def test_run_ads_script_creates_tables_and_submits_spark_job():
     script = _read(RUN_ADS_SCRIPT)
+    normalized_script = script.replace("\\", "/")
 
     assert "param(" in script
     assert "$batchdate" in script
@@ -184,6 +185,43 @@ def test_run_ads_script_creates_tables_and_submits_spark_job():
     assert "spark://spark-master:7077" in script
     assert "beeline" in script
     assert "--export-root" in script
+    assert "--project-directory" in script
+    assert "warehouse/data/ads" in normalized_script
+
+
+def test_run_ads_script_runs_hive_layers_in_dependency_order():
+    script = _read(RUN_ADS_SCRIPT)
+
+    beeline_lines = [
+        line for line in script.splitlines() if '"beeline"' in line and '"-f"' in line
+    ]
+    beeline_targets = [
+        re.search(r'"-f",\s*(\$container(?:dim|dws|ads)sqlpath)', line).group(1)
+        for line in beeline_lines
+    ]
+
+    assert beeline_targets == [
+        "$containerdimsqlpath",
+        "$containerdwssqlpath",
+        "$containeradssqlpath",
+    ]
+
+
+def test_run_ads_script_copies_container_exports_to_host_before_cleanup():
+    script = _read(RUN_ADS_SCRIPT)
+
+    assert "$hostbatchexportdir" in script
+    assert "$containerexportroot" in script
+    copy_match = re.search(
+        r'invoke-compose\s+-composeargs\s+@\([^)]*"cp"[^)]*'
+        r'"spark-master:\$containerexportroot"[^)]*\$hostbatchexportdir[^)]*\)',
+        script,
+        flags=re.DOTALL,
+    )
+    assert copy_match is not None
+
+    spark_cleanup_index = script.index('"spark-master", "rm", "-rf", $containerrundir')
+    assert copy_match.start() < spark_cleanup_index
 
 
 def test_export_ads_mysql_script_calls_python_exporter():
@@ -195,5 +233,8 @@ def test_export_ads_mysql_script_calls_python_exporter():
     assert "--batch-date" in script
     assert "--snapshot-root" in script
     assert "--host" in script
+    assert "--port" in script
     assert "--database" in script
+    assert "--user" in script
+    assert "--password" in script
     assert "$lastexitcode" in script

@@ -13,6 +13,8 @@ $adsSql = Join-Path $projectRoot "warehouse\hive\ads\create_ads_tables.sql"
 $adsJob = Join-Path $projectRoot "warehouse\spark\jobs\ads_job.py"
 $adsSqlTemplates = Join-Path $projectRoot "warehouse\spark\jobs\ads_sql.py"
 $warehouseDir = Join-Path $projectRoot "warehouse"
+$hostExportRoot = Join-Path $projectRoot "warehouse\data\ads"
+$hostBatchExportDir = Join-Path $hostExportRoot $BatchDate
 $runId = "ads-$BatchDate-$PID"
 $containerRunDir = "/tmp/$runId"
 $containerProjectDir = "$containerRunDir/project"
@@ -72,6 +74,14 @@ try {
 
   $sparkCommand = "cd $containerProjectDir && spark-submit --master spark://spark-master:7077 warehouse/spark/jobs/ads_job.py --batch-date $BatchDate --export-root $containerExportRoot"
   Invoke-Compose -ComposeArgs @("exec", "-T", "spark-master", "bash", "-lc", $sparkCommand)
+
+  if (-not (Test-Path -LiteralPath $hostExportRoot)) {
+    New-Item -ItemType Directory -Force -Path $hostExportRoot | Out-Null
+  }
+  if (Test-Path -LiteralPath $hostBatchExportDir) {
+    Remove-Item -LiteralPath $hostBatchExportDir -Recurse -Force
+  }
+  Invoke-Compose -ComposeArgs @("cp", "spark-master:$containerExportRoot", $hostBatchExportDir)
 }
 catch {
   $runFailed = $true
