@@ -13,6 +13,54 @@ ADS_TABLES = (
     "ads_funnel_daily",
 )
 
+ADS_TABLE_COLUMNS = {
+    "ads_kpi_daily": (
+        "date_id",
+        "total_sales_amount",
+        "total_order_count",
+        "paid_user_count",
+        "avg_order_amount",
+        "payment_conversion_rate",
+    ),
+    "ads_sales_trend_daily": (
+        "date_id",
+        "sales_amount",
+        "order_count",
+        "paid_user_count",
+    ),
+    "ads_product_rank_daily": (
+        "date_id",
+        "rank_no",
+        "product_id",
+        "product_name",
+        "category",
+        "sales_quantity",
+        "sales_amount",
+    ),
+    "ads_category_share_daily": (
+        "date_id",
+        "category",
+        "sales_amount",
+        "sales_quantity",
+        "sales_share",
+    ),
+    "ads_user_profile_daily": (
+        "date_id",
+        "dimension_type",
+        "dimension_value",
+        "user_count",
+        "buyer_count",
+        "sales_amount",
+    ),
+    "ads_funnel_daily": (
+        "date_id",
+        "stage_name",
+        "stage_order",
+        "stage_count",
+        "conversion_rate",
+    ),
+}
+
 
 def load_snapshot(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
@@ -29,19 +77,40 @@ def export_table(connection: Any, table_name: str, rows: list[dict[str, Any]], *
     if table_name not in ADS_TABLES:
         raise ValueError(f"Unknown ADS table: {table_name}")
 
-    with connection.cursor() as cursor:
-        cursor.execute(f"DELETE FROM {table_name} WHERE date_id = %s", (batch_date,))
-        if rows:
-            columns = list(rows[0].keys())
-            placeholders = ", ".join(["%s"] * len(columns))
-            column_sql = ", ".join(columns)
-            values = [tuple(row.get(column) for column in columns) for row in rows]
-            cursor.executemany(
-                f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})",
-                values,
-            )
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(f"DELETE FROM {table_name} WHERE date_id = %s", (batch_date,))
+            if rows:
+                columns = ADS_TABLE_COLUMNS[table_name]
+                placeholders = ", ".join(["%s"] * len(columns))
+                column_sql = ", ".join(columns)
+                values = [tuple(row.get(column) for column in columns) for row in rows]
+                cursor.executemany(
+                    f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})",
+                    values,
+                )
+    except Exception:
+        rollback = getattr(connection, "rollback", None)
+        if callable(rollback):
+            rollback()
+        raise
+
     connection.commit()
     return len(rows)
+
+
+def _snapshot_path(snapshot_root: str | Path, batch_date: str, table_name: str) -> Path:
+    return Path(snapshot_root) / batch_date / f"{table_name}.jsonl"
+
+
+def _preflight_snapshots(snapshot_root: str | Path, batch_date: str) -> None:
+    missing_paths = [
+        _snapshot_path(snapshot_root, batch_date, table_name)
+        for table_name in ADS_TABLES
+        if not _snapshot_path(snapshot_root, batch_date, table_name).exists()
+    ]
+    if missing_paths:
+        raise FileNotFoundError(missing_paths[0])
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -69,20 +138,26 @@ def connect_mysql(args: argparse.Namespace) -> Any:
 
 
 def export_batch(connection: Any, snapshot_root: str | Path, batch_date: str) -> dict[str, int]:
-    root = Path(snapshot_root)
+    _preflight_snapshots(snapshot_root, batch_date)
     exported: dict[str, int] = {}
     for table_name in ADS_TABLES:
-        path = root / batch_date / f"{table_name}.jsonl"
+        path = _snapshot_path(snapshot_root, batch_date, table_name)
         exported[table_name] = export_table(connection, table_name, load_snapshot(path), batch_date=batch_date)
     return exported
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    connection = connect_mysql(args)
-    summary = export_batch(connection, args.snapshot_root, args.batch_date)
-    print(json.dumps(summary, ensure_ascii=False))
-    return 0
+    connection = None
+    try:
+        connection = connect_mysql(args)
+        summary = export_batch(connection, args.snapshot_root, args.batch_date)
+        print(json.dumps(summary, ensure_ascii=False))
+        return 0
+    finally:
+        close = getattr(connection, "close", None)
+        if callable(close):
+            close()
 
 
 if __name__ == "__main__":
