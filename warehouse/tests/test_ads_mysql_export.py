@@ -26,8 +26,9 @@ class FakeCursor:
 
 
 class FakeConnection:
-    def __init__(self, *, fail_executemany=False):
+    def __init__(self, *, fail_executemany=False, fail_commit=False):
         self.cursor_obj = FakeCursor(fail_executemany=fail_executemany)
+        self.fail_commit = fail_commit
         self.commit_count = 0
         self.rollback_count = 0
         self.close_count = 0
@@ -36,6 +37,8 @@ class FakeConnection:
         return self.cursor_obj
 
     def commit(self):
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
         self.commit_count += 1
 
     def rollback(self):
@@ -187,6 +190,17 @@ def test_export_table_rolls_back_when_insert_fails():
     rows = [{"date_id": "2026-07-01", "total_order_count": 2}]
 
     with pytest.raises(RuntimeError, match="insert failed"):
+        export_ads_mysql.export_table(connection, "ads_kpi_daily", rows, batch_date="2026-07-01")
+
+    assert connection.rollback_count == 1
+    assert connection.commit_count == 0
+
+
+def test_export_table_rolls_back_when_commit_fails():
+    connection = FakeConnection(fail_commit=True)
+    rows = [{"date_id": "2026-07-01", "total_order_count": 2}]
+
+    with pytest.raises(RuntimeError, match="commit failed"):
         export_ads_mysql.export_table(connection, "ads_kpi_daily", rows, batch_date="2026-07-01")
 
     assert connection.rollback_count == 1

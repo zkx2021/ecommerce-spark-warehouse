@@ -89,13 +89,13 @@ def export_table(connection: Any, table_name: str, rows: list[dict[str, Any]], *
                     f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})",
                     values,
                 )
+        connection.commit()
     except Exception:
         rollback = getattr(connection, "rollback", None)
         if callable(rollback):
             rollback()
         raise
 
-    connection.commit()
     return len(rows)
 
 
