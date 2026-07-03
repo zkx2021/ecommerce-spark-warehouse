@@ -252,35 +252,35 @@ INSERT OVERWRITE TABLE ecommerce_ads.ads_user_profile_daily PARTITION (dt='{batc
 SELECT
     date_id,
     'age_group' AS dimension_type,
-    age_group AS dimension_value,
+    COALESCE(NULLIF(trim(age_group), ''), 'unknown') AS dimension_value,
     SUM(user_count) AS user_count,
     SUM(buyer_count) AS buyer_count,
     CAST(SUM(sales_amount) AS DECIMAL(18,2)) AS sales_amount
 FROM ecommerce_dws.dws_user_profile_daily
 WHERE dt = '{batch_date}'
-GROUP BY date_id, age_group
+GROUP BY date_id, COALESCE(NULLIF(trim(age_group), ''), 'unknown')
 UNION ALL
 SELECT
     date_id,
     'gender' AS dimension_type,
-    gender AS dimension_value,
+    COALESCE(NULLIF(trim(gender), ''), 'unknown') AS dimension_value,
     SUM(user_count) AS user_count,
     SUM(buyer_count) AS buyer_count,
     CAST(SUM(sales_amount) AS DECIMAL(18,2)) AS sales_amount
 FROM ecommerce_dws.dws_user_profile_daily
 WHERE dt = '{batch_date}'
-GROUP BY date_id, gender
+GROUP BY date_id, COALESCE(NULLIF(trim(gender), ''), 'unknown')
 UNION ALL
 SELECT
     date_id,
     'country' AS dimension_type,
-    country AS dimension_value,
+    COALESCE(NULLIF(trim(country), ''), 'unknown') AS dimension_value,
     SUM(user_count) AS user_count,
     SUM(buyer_count) AS buyer_count,
     CAST(SUM(sales_amount) AS DECIMAL(18,2)) AS sales_amount
 FROM ecommerce_dws.dws_user_profile_daily
 WHERE dt = '{batch_date}'
-GROUP BY date_id, country
+GROUP BY date_id, COALESCE(NULLIF(trim(country), ''), 'unknown')
 """,
     "ads_funnel_daily": """
 INSERT OVERWRITE TABLE ecommerce_ads.ads_funnel_daily PARTITION (dt='{batch_date}')

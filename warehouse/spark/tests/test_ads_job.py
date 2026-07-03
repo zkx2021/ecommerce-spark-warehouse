@@ -1,4 +1,7 @@
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -56,6 +59,21 @@ def test_parse_args_accepts_batch_date_and_export_dir(tmp_path):
 def test_parse_args_rejects_invalid_batch_date():
     with pytest.raises(SystemExit):
         ads_job.parse_args(["--batch-date", "2026-7-1"])
+
+
+def test_job_script_help_runs_from_file_path():
+    job_path = Path(__file__).resolve().parents[1] / "jobs" / "ads_job.py"
+
+    result = subprocess.run(
+        [sys.executable, str(job_path), "--help"],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "Run Spark DIM/DWS/ADS batch transformations." in result.stdout
 
 
 def test_run_executes_sql_in_order_and_writes_snapshots(tmp_path):

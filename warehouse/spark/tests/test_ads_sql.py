@@ -140,3 +140,15 @@ def test_share_and_funnel_sql_guard_divide_by_zero():
     assert "case when view_count = 0 or view_count is null then 0" in funnel_sql
     assert "case when cart_count = 0 then 0" in funnel_sql
     assert "case when order_count = 0 then 0" in funnel_sql
+
+
+def test_ads_user_profile_normalizes_nullable_dimension_values():
+    statement = ads_sql.render_statement("ads_user_profile_daily", "2026-07-01").lower()
+    normalized_sql = re.sub(r"\s+", " ", statement)
+
+    assert "coalesce(nullif(trim(age_group), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "coalesce(nullif(trim(gender), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "coalesce(nullif(trim(country), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(age_group), ''), 'unknown')" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(gender), ''), 'unknown')" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(country), ''), 'unknown')" in normalized_sql

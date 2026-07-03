@@ -77,24 +77,17 @@ def export_table(connection: Any, table_name: str, rows: list[dict[str, Any]], *
     if table_name not in ADS_TABLES:
         raise ValueError(f"Unknown ADS table: {table_name}")
 
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(f"DELETE FROM {table_name} WHERE date_id = %s", (batch_date,))
-            if rows:
-                columns = ADS_TABLE_COLUMNS[table_name]
-                placeholders = ", ".join(["%s"] * len(columns))
-                column_sql = ", ".join(columns)
-                values = [tuple(row.get(column) for column in columns) for row in rows]
-                cursor.executemany(
-                    f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})",
-                    values,
-                )
-        connection.commit()
-    except Exception:
-        rollback = getattr(connection, "rollback", None)
-        if callable(rollback):
-            rollback()
-        raise
+    with connection.cursor() as cursor:
+        cursor.execute(f"DELETE FROM {table_name} WHERE date_id = %s", (batch_date,))
+        if rows:
+            columns = ADS_TABLE_COLUMNS[table_name]
+            placeholders = ", ".join(["%s"] * len(columns))
+            column_sql = ", ".join(columns)
+            values = [tuple(row.get(column) for column in columns) for row in rows]
+            cursor.executemany(
+                f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})",
+                values,
+            )
 
     return len(rows)
 
@@ -139,11 +132,22 @@ def connect_mysql(args: argparse.Namespace) -> Any:
 
 def export_batch(connection: Any, snapshot_root: str | Path, batch_date: str) -> dict[str, int]:
     _preflight_snapshots(snapshot_root, batch_date)
-    exported: dict[str, int] = {}
-    for table_name in ADS_TABLES:
-        path = _snapshot_path(snapshot_root, batch_date, table_name)
-        exported[table_name] = export_table(connection, table_name, load_snapshot(path), batch_date=batch_date)
-    return exported
+    snapshots = {
+        table_name: load_snapshot(_snapshot_path(snapshot_root, batch_date, table_name))
+        for table_name in ADS_TABLES
+    }
+
+    try:
+        exported: dict[str, int] = {}
+        for table_name, rows in snapshots.items():
+            exported[table_name] = export_table(connection, table_name, rows, batch_date=batch_date)
+        connection.commit()
+        return exported
+    except Exception:
+        rollback = getattr(connection, "rollback", None)
+        if callable(rollback):
+            rollback()
+        raise
 
 
 def main(argv: list[str] | None = None) -> int:

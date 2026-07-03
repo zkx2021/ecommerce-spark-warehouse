@@ -6,15 +6,16 @@ from warehouse.scripts import export_ads_mysql
 
 
 class FakeCursor:
-    def __init__(self, *, fail_executemany=False):
+    def __init__(self, *, fail_executemany=False, fail_on_table=None):
         self.statements = []
         self.fail_executemany = fail_executemany
+        self.fail_on_table = fail_on_table
 
     def execute(self, statement, params=None):
         self.statements.append((statement, params))
 
     def executemany(self, statement, rows):
-        if self.fail_executemany:
+        if self.fail_executemany or (self.fail_on_table and f"INSERT INTO {self.fail_on_table}" in statement):
             raise RuntimeError("insert failed")
         self.statements.append((statement, rows))
 
@@ -26,8 +27,8 @@ class FakeCursor:
 
 
 class FakeConnection:
-    def __init__(self, *, fail_executemany=False, fail_commit=False):
-        self.cursor_obj = FakeCursor(fail_executemany=fail_executemany)
+    def __init__(self, *, fail_executemany=False, fail_commit=False, fail_on_table=None):
+        self.cursor_obj = FakeCursor(fail_executemany=fail_executemany, fail_on_table=fail_on_table)
         self.fail_commit = fail_commit
         self.commit_count = 0
         self.rollback_count = 0
@@ -86,7 +87,7 @@ def test_export_table_deletes_batch_then_inserts_rows():
     assert count == 1
     assert "delete from ads_kpi_daily where date_id = %s" in connection.cursor_obj.statements[0][0].lower()
     assert "insert into ads_kpi_daily" in connection.cursor_obj.statements[1][0].lower()
-    assert connection.commit_count == 1
+    assert connection.commit_count == 0
 
 
 def test_export_table_rejects_unknown_table():
@@ -96,7 +97,7 @@ def test_export_table_rejects_unknown_table():
         export_ads_mysql.export_table(connection, "not_ads", [], batch_date="2026-07-01")
 
 
-def test_export_table_deletes_and_commits_when_rows_empty():
+def test_export_table_deletes_without_committing_when_rows_empty():
     connection = FakeConnection()
 
     count = export_ads_mysql.export_table(connection, "ads_kpi_daily", [], batch_date="2026-07-01")
@@ -105,7 +106,7 @@ def test_export_table_deletes_and_commits_when_rows_empty():
     assert connection.cursor_obj.statements == [
         ("DELETE FROM ads_kpi_daily WHERE date_id = %s", ("2026-07-01",))
     ]
-    assert connection.commit_count == 1
+    assert connection.commit_count == 0
 
 
 def test_export_table_uses_schema_column_order_and_ignores_snapshot_metadata():
@@ -169,6 +170,8 @@ def test_export_batch_loads_all_ads_snapshots(tmp_path):
         "ads_user_profile_daily": 0,
         "ads_funnel_daily": 1,
     }
+    assert connection.commit_count == 1
+    assert connection.rollback_count == 0
 
 
 def test_export_batch_raises_before_mutating_when_snapshot_missing(tmp_path):
@@ -192,16 +195,36 @@ def test_export_table_rolls_back_when_insert_fails():
     with pytest.raises(RuntimeError, match="insert failed"):
         export_ads_mysql.export_table(connection, "ads_kpi_daily", rows, batch_date="2026-07-01")
 
-    assert connection.rollback_count == 1
+    assert connection.rollback_count == 0
     assert connection.commit_count == 0
 
 
-def test_export_table_rolls_back_when_commit_fails():
+def test_export_batch_rolls_back_when_insert_fails_after_prior_table(tmp_path):
+    snapshot_dir = tmp_path / "2026-07-01"
+    write_snapshots(
+        snapshot_dir,
+        {
+            "ads_kpi_daily": [{"date_id": "2026-07-01", "total_order_count": 2}],
+            "ads_sales_trend_daily": [{"date_id": "2026-07-01", "sales_amount": 10}],
+        },
+    )
+    connection = FakeConnection(fail_on_table="ads_sales_trend_daily")
+
+    with pytest.raises(RuntimeError, match="insert failed"):
+        export_ads_mysql.export_batch(connection, tmp_path, "2026-07-01")
+
+    assert connection.rollback_count == 1
+    assert connection.commit_count == 0
+    executed_sql = [statement for statement, _ in connection.cursor_obj.statements]
+    assert any("INSERT INTO ads_kpi_daily" in statement for statement in executed_sql)
+
+
+def test_export_batch_rolls_back_when_commit_fails(tmp_path):
+    write_snapshots(tmp_path / "2026-07-01", {"ads_kpi_daily": [{"date_id": "2026-07-01"}]})
     connection = FakeConnection(fail_commit=True)
-    rows = [{"date_id": "2026-07-01", "total_order_count": 2}]
 
     with pytest.raises(RuntimeError, match="commit failed"):
-        export_ads_mysql.export_table(connection, "ads_kpi_daily", rows, batch_date="2026-07-01")
+        export_ads_mysql.export_batch(connection, tmp_path, "2026-07-01")
 
     assert connection.rollback_count == 1
     assert connection.commit_count == 0
