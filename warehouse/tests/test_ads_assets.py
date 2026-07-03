@@ -6,6 +6,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DIM_SQL = PROJECT_ROOT / "warehouse" / "hive" / "dim" / "create_dim_tables.sql"
 DWS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "dws" / "create_dws_tables.sql"
 ADS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "ads" / "create_ads_tables.sql"
+MYSQL_ADS_SQL = PROJECT_ROOT / "deploy" / "mysql" / "init" / "02-create-ads-tables.sql"
 
 
 def _read(path: Path) -> str:
@@ -120,3 +121,26 @@ def test_ads_sql_points_to_expected_hdfs_locations():
         "ads_user_profile_daily": "/warehouse/ecommerce/ads/user_profile_daily",
         "ads_funnel_daily": "/warehouse/ecommerce/ads/funnel_daily",
     }
+
+
+def test_mysql_ads_sql_creates_dashboard_tables_and_keys():
+    sql = _read(MYSQL_ADS_SQL)
+
+    assert "use ecommerce_ads" in sql
+    for table_name in (
+        "ads_kpi_daily",
+        "ads_sales_trend_daily",
+        "ads_product_rank_daily",
+        "ads_category_share_daily",
+        "ads_user_profile_daily",
+        "ads_funnel_daily",
+    ):
+        assert f"create table if not exists {table_name}" in sql
+    for key_fragment in (
+        "primary key (date_id)",
+        "primary key (date_id, rank_no)",
+        "primary key (date_id, category)",
+        "primary key (date_id, dimension_type, dimension_value)",
+        "primary key (date_id, stage_order)",
+    ):
+        assert key_fragment in sql

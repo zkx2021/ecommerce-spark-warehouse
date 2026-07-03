@@ -1,0 +1,64 @@
+USE ecommerce_ads;
+
+CREATE TABLE IF NOT EXISTS ads_kpi_daily (
+  date_id VARCHAR(10) NOT NULL,
+  total_sales_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  total_order_count BIGINT NOT NULL DEFAULT 0,
+  paid_user_count BIGINT NOT NULL DEFAULT 0,
+  avg_order_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  payment_conversion_rate DECIMAL(10,4) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads_sales_trend_daily (
+  date_id VARCHAR(10) NOT NULL,
+  sales_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  order_count BIGINT NOT NULL DEFAULT 0,
+  paid_user_count BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads_product_rank_daily (
+  date_id VARCHAR(10) NOT NULL,
+  rank_no INT NOT NULL,
+  product_id BIGINT NOT NULL,
+  product_name VARCHAR(255) NOT NULL,
+  category VARCHAR(128),
+  sales_quantity BIGINT NOT NULL DEFAULT 0,
+  sales_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id, rank_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads_category_share_daily (
+  date_id VARCHAR(10) NOT NULL,
+  category VARCHAR(128) NOT NULL,
+  sales_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  sales_quantity BIGINT NOT NULL DEFAULT 0,
+  sales_share DECIMAL(10,4) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id, category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads_user_profile_daily (
+  date_id VARCHAR(10) NOT NULL,
+  dimension_type VARCHAR(32) NOT NULL,
+  dimension_value VARCHAR(128) NOT NULL,
+  user_count BIGINT NOT NULL DEFAULT 0,
+  buyer_count BIGINT NOT NULL DEFAULT 0,
+  sales_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id, dimension_type, dimension_value)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads_funnel_daily (
+  date_id VARCHAR(10) NOT NULL,
+  stage_name VARCHAR(64) NOT NULL,
+  stage_order INT NOT NULL,
+  stage_count BIGINT NOT NULL DEFAULT 0,
+  conversion_rate DECIMAL(10,4) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (date_id, stage_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
