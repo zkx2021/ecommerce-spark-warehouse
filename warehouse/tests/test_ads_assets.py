@@ -8,6 +8,8 @@ DWS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "dws" / "create_dws_tables.sql"
 ADS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "ads" / "create_ads_tables.sql"
 MYSQL_ADS_SQL = PROJECT_ROOT / "deploy" / "mysql" / "init" / "02-create-ads-tables.sql"
 DOCKER_COMPOSE = PROJECT_ROOT / "docker-compose.yml"
+RUN_ADS_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "run_ads.ps1"
+EXPORT_ADS_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "export_ads_mysql.ps1"
 
 
 def _read(path: Path) -> str:
@@ -166,3 +168,32 @@ def test_mysql_init_directory_is_mounted_for_entrypoint_scripts():
         compose,
         flags=re.MULTILINE,
     )
+
+
+def test_run_ads_script_creates_tables_and_submits_spark_job():
+    script = _read(RUN_ADS_SCRIPT)
+
+    assert "param(" in script
+    assert "$batchdate" in script
+    assert "create_dim_tables.sql" in script
+    assert "create_dws_tables.sql" in script
+    assert "create_ads_tables.sql" in script
+    assert "ads_job.py" in script
+    assert "ads_sql.py" in script
+    assert "spark-submit" in script
+    assert "spark://spark-master:7077" in script
+    assert "beeline" in script
+    assert "--export-root" in script
+
+
+def test_export_ads_mysql_script_calls_python_exporter():
+    script = _read(EXPORT_ADS_SCRIPT)
+
+    assert "param(" in script
+    assert "$batchdate" in script
+    assert "export_ads_mysql.py" in script
+    assert "--batch-date" in script
+    assert "--snapshot-root" in script
+    assert "--host" in script
+    assert "--database" in script
+    assert "$lastexitcode" in script
