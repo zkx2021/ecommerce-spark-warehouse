@@ -13,7 +13,7 @@ param(
 
   [string]$User = "ecommerce",
 
-  [string]$Password = "ecommerce"
+  [string]$Password = "ecommerce_password"
 )
 
 $ErrorActionPreference = "Stop"

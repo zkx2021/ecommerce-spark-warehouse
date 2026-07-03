@@ -236,6 +236,16 @@ def test_parse_args_accepts_mysql_connection_options(tmp_path):
     assert args.password == "secret"
 
 
+def test_parse_args_uses_compose_mysql_defaults():
+    args = export_ads_mysql.parse_args(["--batch-date", "2026-07-01"])
+
+    assert args.host == "localhost"
+    assert args.port == 3306
+    assert args.database == "ecommerce_ads"
+    assert args.user == "ecommerce"
+    assert args.password == "ecommerce_password"
+
+
 def test_main_prints_json_summary(tmp_path, capsys, monkeypatch):
     write_snapshots(tmp_path / "2026-07-01")
     connection = FakeConnection()

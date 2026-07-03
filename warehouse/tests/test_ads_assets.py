@@ -43,6 +43,13 @@ def _mysql_table_block(sql: str, table_name: str) -> str:
     raise AssertionError(f"unterminated CREATE TABLE block for {table_name}")
 
 
+def _compose_env_value(name: str) -> str:
+    compose = _read(DOCKER_COMPOSE)
+    match = re.search(rf"^\s*{re.escape(name.lower())}:\s*([^\s#]+)", compose, flags=re.MULTILINE)
+    assert match is not None, f"missing Compose environment value for {name}"
+    return match.group(1)
+
+
 def test_dim_sql_creates_database_tables_and_partitions():
     sql = _read(DIM_SQL)
 
@@ -238,3 +245,12 @@ def test_export_ads_mysql_script_calls_python_exporter():
     assert "--user" in script
     assert "--password" in script
     assert "$lastexitcode" in script
+
+
+def test_export_ads_mysql_script_defaults_to_compose_mysql_password():
+    compose_password = _compose_env_value("MYSQL_PASSWORD")
+    script = _read(EXPORT_ADS_SCRIPT)
+
+    assert f'$password = "{compose_password}"' in script
+    assert "--password" in script
+    assert "$password" in script

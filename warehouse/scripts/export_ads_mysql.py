@@ -121,7 +121,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=3306, help="MySQL port.")
     parser.add_argument("--database", default="ecommerce_ads", help="MySQL database.")
     parser.add_argument("--user", default="ecommerce", help="MySQL user.")
-    parser.add_argument("--password", default="ecommerce", help="MySQL password.")
+    parser.add_argument("--password", default="ecommerce_password", help="MySQL password.")
     return parser.parse_args(argv)
 
 
