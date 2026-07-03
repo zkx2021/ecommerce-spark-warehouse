@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from warehouse.spark.jobs import ads_job
+from warehouse.spark.jobs import ads_job, ads_sql
 
 
 class FakeRow(dict):
@@ -73,7 +73,7 @@ def test_run_executes_sql_in_order_and_writes_snapshots(tmp_path):
 
     assert summary["status"] == "ok"
     assert summary["batch_date"] == "2026-07-01"
-    assert len(spark.sql_calls) == 15
+    assert spark.sql_calls == [statement.sql for statement in ads_sql.render_all_sql("2026-07-01")]
     assert spark.table_reads == [f"{ads_job.ADS_DATABASE}.{table_name}" for table_name in ads_job.ADS_EXPORT_TABLES]
     assert [record[0] for record in spark.table_records] == [
         f"{ads_job.ADS_DATABASE}.{table_name}" for table_name in ads_job.ADS_EXPORT_TABLES

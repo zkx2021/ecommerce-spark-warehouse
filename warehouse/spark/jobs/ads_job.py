@@ -74,7 +74,6 @@ def _export_ads_snapshots(spark: Any, config: AdsJobConfig) -> dict[str, int]:
             _row_to_dict(row)
             for row in spark.table(f"{ADS_DATABASE}.{table_name}").where(f"dt = '{config.batch_date}'").collect()
         ]
-        rows = sorted(rows, key=_canonical_row_key)
         _write_jsonl(output_dir / f"{table_name}.jsonl", rows)
         counts[table_name] = len(rows)
     return counts
