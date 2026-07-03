@@ -68,6 +68,12 @@ powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_ads.ps1 -BatchDat
 
 Export the ADS JSONL snapshots into MySQL:
 
+Install the local exporter dependency `mysql-connector-python`:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+```
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/export_ads_mysql.ps1 -BatchDate 2026-07-01
 ```

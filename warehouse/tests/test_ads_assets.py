@@ -13,6 +13,7 @@ EXPORT_ADS_SCRIPT = PROJECT_ROOT / "warehouse" / "scripts" / "export_ads_mysql.p
 FOUNDATION_CHECK = PROJECT_ROOT / "deploy" / "scripts" / "check.ps1"
 WAREHOUSE_README = PROJECT_ROOT / "warehouse" / "README.md"
 ROOT_README = PROJECT_ROOT / "README.md"
+DEV_REQUIREMENTS = PROJECT_ROOT / "requirements-dev.txt"
 
 
 def _read(path: Path) -> str:
@@ -279,13 +280,18 @@ def test_foundation_check_includes_ads_runtime_assets():
 def test_readmes_document_ads_batch_flow():
     warehouse_readme = _read(WAREHOUSE_README)
     root_readme = _read(ROOT_README)
+    dev_requirements = _read(DEV_REQUIREMENTS)
 
     assert "dim/dws/ads batch flow" in warehouse_readme
     assert "run_ads.ps1" in warehouse_readme
     assert "export_ads_mysql.ps1" in warehouse_readme
+    assert "mysql-connector-python" in warehouse_readme
+    assert "mysql-connector-python" in dev_requirements
     assert "ecommerce_dim" in warehouse_readme
     assert "ecommerce_dws" in warehouse_readme
     assert "ecommerce_ads" in warehouse_readme
     assert "ods -> dwd -> dim -> dws -> ads -> mysql" in warehouse_readme
     assert "warehouse/data/ads/<batch-date>/" in warehouse_readme
     assert "dim, dws, ads" in root_readme
+    assert "planned api" in root_readme
+    assert "planned vue" in root_readme
