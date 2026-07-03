@@ -51,7 +51,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./deploy/mysql/init/01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+      - ./deploy/mysql/init:/docker-entrypoint-initdb.d:ro
 
   spark-master:
     image: bitnami/spark:3.5

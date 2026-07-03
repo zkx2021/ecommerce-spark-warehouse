@@ -7,6 +7,7 @@ DIM_SQL = PROJECT_ROOT / "warehouse" / "hive" / "dim" / "create_dim_tables.sql"
 DWS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "dws" / "create_dws_tables.sql"
 ADS_SQL = PROJECT_ROOT / "warehouse" / "hive" / "ads" / "create_ads_tables.sql"
 MYSQL_ADS_SQL = PROJECT_ROOT / "deploy" / "mysql" / "init" / "02-create-ads-tables.sql"
+DOCKER_COMPOSE = PROJECT_ROOT / "docker-compose.yml"
 
 
 def _read(path: Path) -> str:
@@ -21,6 +22,23 @@ def _table_locations(sql: str) -> dict[str, str]:
             flags=re.DOTALL,
         )
     )
+
+
+def _mysql_table_block(sql: str, table_name: str) -> str:
+    match = re.search(rf"create table if not exists\s+{table_name}\s*\(", sql)
+    assert match is not None, f"missing CREATE TABLE for {table_name}"
+
+    start = match.end() - 1
+    depth = 0
+    for index in range(start, len(sql)):
+        if sql[index] == "(":
+            depth += 1
+        elif sql[index] == ")":
+            depth -= 1
+            if depth == 0:
+                return sql[start : index + 1]
+
+    raise AssertionError(f"unterminated CREATE TABLE block for {table_name}")
 
 
 def test_dim_sql_creates_database_tables_and_partitions():
@@ -127,20 +145,24 @@ def test_mysql_ads_sql_creates_dashboard_tables_and_keys():
     sql = _read(MYSQL_ADS_SQL)
 
     assert "use ecommerce_ads" in sql
-    for table_name in (
-        "ads_kpi_daily",
-        "ads_sales_trend_daily",
-        "ads_product_rank_daily",
-        "ads_category_share_daily",
-        "ads_user_profile_daily",
-        "ads_funnel_daily",
-    ):
-        assert f"create table if not exists {table_name}" in sql
-    for key_fragment in (
-        "primary key (date_id)",
-        "primary key (date_id, rank_no)",
-        "primary key (date_id, category)",
-        "primary key (date_id, dimension_type, dimension_value)",
-        "primary key (date_id, stage_order)",
-    ):
-        assert key_fragment in sql
+    expected_primary_keys = {
+        "ads_kpi_daily": "primary key (date_id)",
+        "ads_sales_trend_daily": "primary key (date_id)",
+        "ads_product_rank_daily": "primary key (date_id, rank_no)",
+        "ads_category_share_daily": "primary key (date_id, category)",
+        "ads_user_profile_daily": "primary key (date_id, dimension_type, dimension_value)",
+        "ads_funnel_daily": "primary key (date_id, stage_order)",
+    }
+    for table_name, primary_key in expected_primary_keys.items():
+        table_block = _mysql_table_block(sql, table_name)
+        assert primary_key in table_block
+
+
+def test_mysql_init_directory_is_mounted_for_entrypoint_scripts():
+    compose = _read(DOCKER_COMPOSE).replace("\\", "/")
+
+    assert re.search(
+        r"^\s*-\s+\.?/deploy/mysql/init:/docker-entrypoint-initdb\.d(?::ro)?\s*$",
+        compose,
+        flags=re.MULTILINE,
+    )
