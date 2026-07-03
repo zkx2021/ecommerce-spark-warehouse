@@ -30,7 +30,7 @@ SQL_TEMPLATES: dict[str, str] = {
     "dim_date": """
 INSERT OVERWRITE TABLE ecommerce_dim.dim_date PARTITION (dt='{batch_date}')
 SELECT
-    regexp_replace('{batch_date}', '-', '') AS date_id,
+    '{batch_date}' AS date_id,
     to_date('{batch_date}') AS date_value,
     year(to_date('{batch_date}')) AS year,
     quarter(to_date('{batch_date}')) AS quarter,
@@ -45,7 +45,7 @@ INSERT OVERWRITE TABLE ecommerce_dim.dim_product PARTITION (dt='{batch_date}')
 SELECT
     product_id,
     product_name,
-    category,
+    COALESCE(NULLIF(trim(category), ''), 'unknown') AS category,
     brand,
     CAST(price AS DECIMAL(18,2)) AS price,
     stock,
@@ -59,8 +59,13 @@ SELECT
     lower(regexp_replace(category, '[^a-zA-Z0-9]+', '_')) AS category_id,
     category AS category_name,
     COUNT(DISTINCT product_id) AS product_count
-FROM ecommerce_dwd.dwd_product_info
-WHERE dt = '{batch_date}'
+FROM (
+    SELECT
+        product_id,
+        COALESCE(NULLIF(trim(category), ''), 'unknown') AS category
+    FROM ecommerce_dwd.dwd_product_info
+    WHERE dt = '{batch_date}'
+) normalized_products
 GROUP BY category
 """,
     "dim_user": """
@@ -84,14 +89,14 @@ SELECT
     '{batch_date}' AS date_id,
     COUNT(DISTINCT cart_id) AS order_count,
     COUNT(DISTINCT user_id) AS pay_user_count,
-    CAST(SUM(cart_total) AS DECIMAL(18,2)) AS total_sales_amount,
-    CAST(SUM(cart_discounted_total) AS DECIMAL(18,2)) AS discount_sales_amount,
+    CAST(COALESCE(SUM(cart_total), 0) AS DECIMAL(18,2)) AS total_sales_amount,
+    CAST(COALESCE(SUM(cart_discounted_total), 0) AS DECIMAL(18,2)) AS discount_sales_amount,
     CAST(
         CASE WHEN COUNT(DISTINCT cart_id) = 0 THEN 0
-             ELSE SUM(cart_discounted_total) / COUNT(DISTINCT cart_id)
+             ELSE COALESCE(SUM(cart_discounted_total), 0) / COUNT(DISTINCT cart_id)
         END AS DECIMAL(18,2)
     ) AS avg_order_amount,
-    SUM(total_quantity) AS total_quantity
+    COALESCE(SUM(total_quantity), 0) AS total_quantity
 FROM (
     SELECT DISTINCT cart_id, user_id, cart_total, cart_discounted_total, total_quantity
     FROM ecommerce_dwd.dwd_order_cart_detail
