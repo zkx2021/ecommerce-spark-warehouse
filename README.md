@@ -4,7 +4,9 @@
 
 ## Project Goal
 
-This project builds an offline ecommerce data warehouse using Spark, HDFS, and Hive. It collects ecommerce-like data through a configurable crawler, stores raw data in HDFS, builds layered Hive tables, computes offline metrics with Spark SQL, exposes ADS metrics through FastAPI, and presents them in a Vue + ECharts dashboard.
+This project builds an offline ecommerce data warehouse using Spark, HDFS, and Hive. It collects ecommerce-like data through a configurable crawler, stores raw data in HDFS, builds layered Hive tables, computes offline metrics with Spark SQL, and exports ADS results to MySQL for a future dashboard API and UI.
+
+The offline warehouse now includes ODS, DWD, DIM, DWS, ADS, and MySQL ADS export assets. The dim, dws, ads layers prepare dashboard-ready metrics after the detailed DWD layer.
 
 ## Tech Stack
 
@@ -13,8 +15,8 @@ This project builds an offline ecommerce data warehouse using Spark, HDFS, and H
 - Warehouse: Hive
 - Compute: Spark SQL
 - Result store: MySQL
-- API: FastAPI
-- Dashboard: Vue 3 + ECharts
+- Planned API: FastAPI scaffold
+- Planned Vue dashboard: Vue 3 scaffold, ECharts later
 - Deployment: Docker Compose
 
 ## Planned Data Flow
@@ -30,8 +32,8 @@ Crawler -> Local raw files -> HDFS -> Hive ODS/DWD/DIM/DWS/ADS
 ```text
 crawler/      Data collection module
 warehouse/    HDFS, Hive, and Spark warehouse assets
-backend/      FastAPI dashboard API
-frontend/     Vue + ECharts dashboard
+backend/      Planned API scaffold
+frontend/     Planned Vue dashboard scaffold
 deploy/       Local and server deployment scripts
 docs/         Architecture, data model, deployment, and GitHub workflow docs
 ```

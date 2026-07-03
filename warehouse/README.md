@@ -58,6 +58,30 @@ The DWD batch reads `ecommerce_ods` partitions for the requested date and writes
 - `ecommerce_dwd.dwd_user_info`
 - `ecommerce_dwd.dwd_order_cart_detail`
 
+## DIM/DWS/ADS Batch Flow
+
+Run the downstream warehouse batch after ODS and DWD are complete for the same date:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_ads.ps1 -BatchDate 2026-07-01
+```
+
+Export the ADS JSONL snapshots into MySQL:
+
+Install the local exporter dependency `mysql-connector-python`:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/export_ads_mysql.ps1 -BatchDate 2026-07-01
+```
+
+Layer order: `ODS -> DWD -> DIM -> DWS -> ADS -> MySQL`.
+
+The Spark ADS batch creates or refreshes Hive tables in `ecommerce_dim`, `ecommerce_dws`, and `ecommerce_ads`, then writes dashboard snapshots under `warehouse/data/ads/<batch-date>/` for the MySQL exporter.
+
 ## HDFS ODS Paths
 
 Expected ODS landing paths use one partition directory per source and batch date:

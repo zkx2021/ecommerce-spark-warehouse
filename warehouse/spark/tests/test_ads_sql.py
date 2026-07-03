@@ -1,0 +1,154 @@
+import re
+
+from warehouse.spark.jobs import ads_sql
+
+
+def test_render_all_sql_uses_batch_date_and_dependency_order():
+    statements = ads_sql.render_all_sql("2026-07-01")
+    expected_order = (
+        "dim_date",
+        "dim_product",
+        "dim_category",
+        "dim_user",
+        "dws_sales_daily",
+        "dws_product_daily",
+        "dws_category_daily",
+        "dws_user_profile_daily",
+        "dws_funnel_daily",
+        "ads_kpi_daily",
+        "ads_sales_trend_daily",
+        "ads_product_rank_daily",
+        "ads_category_share_daily",
+        "ads_user_profile_daily",
+        "ads_funnel_daily",
+    )
+
+    names = [statement.name for statement in statements]
+    assert tuple(names) == expected_order
+    assert ads_sql.STATEMENT_ORDER == expected_order
+    assert set(ads_sql.STATEMENT_ORDER) == set(ads_sql.SQL_TEMPLATES)
+    assert len(ads_sql.SQL_TEMPLATES) == 15
+    first_dws_index = next(index for index, name in enumerate(names) if name.startswith("dws_"))
+    first_ads_index = next(index for index, name in enumerate(names) if name.startswith("ads_"))
+    assert all(name.startswith("dim_") for name in names[:first_dws_index])
+    assert all(name.startswith("dws_") for name in names[first_dws_index:first_ads_index])
+    assert all(name.startswith("ads_") for name in names[first_ads_index:])
+    assert names[-1] == "ads_funnel_daily"
+    for statement in statements:
+        assert statement.sql.lstrip().startswith("INSERT OVERWRITE TABLE")
+        assert "PARTITION (dt='2026-07-01')" in statement.sql
+        assert "2026-07-01" in statement.sql
+
+
+def test_date_id_uses_dashed_batch_date_consistently_across_layers():
+    rendered_sql = {
+        name: ads_sql.render_statement(name, "2026-07-01")
+        for name in ads_sql.STATEMENT_ORDER
+    }
+    normalized_sql = {
+        name: re.sub(r"\s+", " ", sql).lower()
+        for name, sql in rendered_sql.items()
+    }
+
+    for statement in rendered_sql.values():
+        assert not re.search(
+            r"regexp_replace\s*\([^)]*\)\s+as\s+date_id",
+            statement,
+            re.IGNORECASE,
+        )
+
+    for name in (
+        "dim_date",
+        "dws_sales_daily",
+        "dws_product_daily",
+        "dws_category_daily",
+        "dws_user_profile_daily",
+        "dws_funnel_daily",
+    ):
+        assert "'2026-07-01' as date_id" in normalized_sql[name]
+
+    propagated_date_id_references = {
+        "ads_kpi_daily": "sales.date_id",
+        "ads_sales_trend_daily": "select date_id,",
+        "ads_product_rank_daily": "select date_id,",
+        "ads_category_share_daily": "category_sales.date_id",
+        "ads_user_profile_daily": "select date_id,",
+        "ads_funnel_daily": "select date_id,",
+    }
+    for name, date_id_reference in propagated_date_id_references.items():
+        assert "'2026-07-01' as date_id" not in normalized_sql[name]
+        assert date_id_reference in normalized_sql[name]
+
+
+def test_dws_sales_sql_deduplicates_cart_totals():
+    statement = ads_sql.render_statement("dws_sales_daily", "2026-07-01").lower()
+
+    assert "select distinct cart_id" in statement
+    assert "sum(cart_discounted_total)" in statement
+    assert "count(distinct user_id)" in statement
+
+
+def test_dws_sales_sql_coalesces_empty_batch_aggregates():
+    statement = ads_sql.render_statement("dws_sales_daily", "2026-07-01").lower()
+
+    assert "cast(coalesce(sum(cart_total), 0) as decimal(18,2)) as total_sales_amount" in statement
+    assert (
+        "cast(coalesce(sum(cart_discounted_total), 0) as decimal(18,2)) as discount_sales_amount"
+        in statement
+    )
+    assert "else coalesce(sum(cart_discounted_total), 0) / count(distinct cart_id)" in statement
+    assert "coalesce(sum(total_quantity), 0) as total_quantity" in statement
+
+
+def test_dimension_sql_normalizes_blank_categories():
+    product_sql = ads_sql.render_statement("dim_product", "2026-07-01").lower()
+    category_sql = ads_sql.render_statement("dim_category", "2026-07-01").lower()
+    normalized_category = "coalesce(nullif(trim(category), ''), 'unknown')"
+
+    assert f"{normalized_category} as category" in product_sql
+    assert normalized_category in category_sql
+    assert "lower(regexp_replace(category, '[^a-za-z0-9]+', '_')) as category_id" in category_sql
+    assert "category as category_name" in category_sql
+    assert "group by category" in category_sql
+
+
+def test_dws_product_daily_coalesces_missing_product_category():
+    statement = ads_sql.render_statement("dws_product_daily", "2026-07-01").lower()
+    normalized_sql = re.sub(r"\s+", " ", statement)
+
+    assert "coalesce(product.category, 'unknown') as category" in normalized_sql
+    assert (
+        "group by detail.product_id, "
+        "coalesce(product.product_name, detail.product_name), "
+        "coalesce(product.category, 'unknown'), product.brand"
+    ) in normalized_sql
+
+
+def test_ads_product_rank_uses_top_10_window():
+    statement = ads_sql.render_statement("ads_product_rank_daily", "2026-07-01").lower()
+
+    assert "row_number() over" in statement
+    assert "order by sales_amount desc, sales_quantity desc" in statement
+    assert "rank_no <= 10" in statement
+
+
+def test_share_and_funnel_sql_guard_divide_by_zero():
+    category_sql = ads_sql.render_statement("ads_category_share_daily", "2026-07-01").lower()
+    funnel_sql = ads_sql.render_statement("ads_funnel_daily", "2026-07-01").lower()
+
+    assert "case when total_sales_amount = 0 then 0" in category_sql
+    assert "case when view_count = 0 or view_count is null then 0" in funnel_sql
+    assert "case when cart_count = 0 then 0" in funnel_sql
+    assert "case when order_count = 0 then 0" in funnel_sql
+
+
+def test_ads_user_profile_normalizes_nullable_dimension_values():
+    statement = ads_sql.render_statement("ads_user_profile_daily", "2026-07-01").lower()
+    normalized_sql = re.sub(r"\s+", " ", statement)
+
+    assert "coalesce(nullif(trim(age_group), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "coalesce(nullif(trim(gender), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "coalesce(nullif(trim(country), ''), 'unknown') as dimension_value" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(age_group), ''), 'unknown')" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(gender), ''), 'unknown')" in normalized_sql
+    assert "group by date_id, coalesce(nullif(trim(country), ''), 'unknown')" in normalized_sql
