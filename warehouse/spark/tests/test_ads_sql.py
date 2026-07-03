@@ -5,12 +5,29 @@ from warehouse.spark.jobs import ads_sql
 
 def test_render_all_sql_uses_batch_date_and_dependency_order():
     statements = ads_sql.render_all_sql("2026-07-01")
+    expected_order = (
+        "dim_date",
+        "dim_product",
+        "dim_category",
+        "dim_user",
+        "dws_sales_daily",
+        "dws_product_daily",
+        "dws_category_daily",
+        "dws_user_profile_daily",
+        "dws_funnel_daily",
+        "ads_kpi_daily",
+        "ads_sales_trend_daily",
+        "ads_product_rank_daily",
+        "ads_category_share_daily",
+        "ads_user_profile_daily",
+        "ads_funnel_daily",
+    )
 
     names = [statement.name for statement in statements]
+    assert tuple(names) == expected_order
+    assert ads_sql.STATEMENT_ORDER == expected_order
     assert set(ads_sql.STATEMENT_ORDER) == set(ads_sql.SQL_TEMPLATES)
-    assert len(ads_sql.STATEMENT_ORDER) == 15
     assert len(ads_sql.SQL_TEMPLATES) == 15
-    assert names == list(ads_sql.STATEMENT_ORDER)
     first_dws_index = next(index for index, name in enumerate(names) if name.startswith("dws_"))
     first_ads_index = next(index for index, name in enumerate(names) if name.startswith("ads_"))
     assert all(name.startswith("dim_") for name in names[:first_dws_index])
@@ -93,6 +110,18 @@ def test_dimension_sql_normalizes_blank_categories():
     assert "lower(regexp_replace(category, '[^a-za-z0-9]+', '_')) as category_id" in category_sql
     assert "category as category_name" in category_sql
     assert "group by category" in category_sql
+
+
+def test_dws_product_daily_coalesces_missing_product_category():
+    statement = ads_sql.render_statement("dws_product_daily", "2026-07-01").lower()
+    normalized_sql = re.sub(r"\s+", " ", statement)
+
+    assert "coalesce(product.category, 'unknown') as category" in normalized_sql
+    assert (
+        "group by detail.product_id, "
+        "coalesce(product.product_name, detail.product_name), "
+        "coalesce(product.category, 'unknown'), product.brand"
+    ) in normalized_sql
 
 
 def test_ads_product_rank_uses_top_10_window():
