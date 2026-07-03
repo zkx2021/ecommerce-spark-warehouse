@@ -1,3 +1,5 @@
+import re
+
 from warehouse.spark.jobs import ads_sql
 
 
@@ -15,15 +17,50 @@ def test_render_all_sql_uses_batch_date_and_dependency_order():
     assert all(name.startswith("dws_") for name in names[first_dws_index:first_ads_index])
     assert all(name.startswith("ads_") for name in names[first_ads_index:])
     assert names[-1] == "ads_funnel_daily"
-    assert all("2026-07-01" in statement.sql for statement in statements)
+    for statement in statements:
+        assert statement.sql.lstrip().startswith("INSERT OVERWRITE TABLE")
+        assert "PARTITION (dt='2026-07-01')" in statement.sql
+        assert "2026-07-01" in statement.sql
 
 
-def test_dim_date_uses_dashed_batch_date_id():
-    statement = ads_sql.render_statement("dim_date", "2026-07-01").lower()
+def test_date_id_uses_dashed_batch_date_consistently_across_layers():
+    rendered_sql = {
+        name: ads_sql.render_statement(name, "2026-07-01")
+        for name in ads_sql.STATEMENT_ORDER
+    }
+    normalized_sql = {
+        name: re.sub(r"\s+", " ", sql).lower()
+        for name, sql in rendered_sql.items()
+    }
 
-    assert "'2026-07-01' as date_id" in statement
-    assert "regexp_replace('{batch_date}', '-', '') as date_id" not in statement
-    assert "regexp_replace('2026-07-01', '-', '') as date_id" not in statement
+    for statement in rendered_sql.values():
+        assert not re.search(
+            r"regexp_replace\s*\([^)]*\)\s+as\s+date_id",
+            statement,
+            re.IGNORECASE,
+        )
+
+    for name in (
+        "dim_date",
+        "dws_sales_daily",
+        "dws_product_daily",
+        "dws_category_daily",
+        "dws_user_profile_daily",
+        "dws_funnel_daily",
+    ):
+        assert "'2026-07-01' as date_id" in normalized_sql[name]
+
+    propagated_date_id_references = {
+        "ads_kpi_daily": "sales.date_id",
+        "ads_sales_trend_daily": "select date_id,",
+        "ads_product_rank_daily": "select date_id,",
+        "ads_category_share_daily": "category_sales.date_id",
+        "ads_user_profile_daily": "select date_id,",
+        "ads_funnel_daily": "select date_id,",
+    }
+    for name, date_id_reference in propagated_date_id_references.items():
+        assert "'2026-07-01' as date_id" not in normalized_sql[name]
+        assert date_id_reference in normalized_sql[name]
 
 
 def test_dws_sales_sql_deduplicates_cart_totals():
@@ -71,4 +108,6 @@ def test_share_and_funnel_sql_guard_divide_by_zero():
     funnel_sql = ads_sql.render_statement("ads_funnel_daily", "2026-07-01").lower()
 
     assert "case when total_sales_amount = 0 then 0" in category_sql
+    assert "case when view_count = 0 or view_count is null then 0" in funnel_sql
+    assert "case when cart_count = 0 then 0" in funnel_sql
     assert "case when order_count = 0 then 0" in funnel_sql
