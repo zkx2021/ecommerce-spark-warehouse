@@ -55,10 +55,14 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     return dict(row)
 
 
+def _canonical_row_key(row: dict[str, Any]) -> str:
+    return json.dumps(row, ensure_ascii=False, default=str, sort_keys=True)
+
+
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for row in rows:
+        for row in sorted(rows, key=_canonical_row_key):
             handle.write(json.dumps(row, ensure_ascii=False, default=str, sort_keys=True) + "\n")
 
 
@@ -70,6 +74,7 @@ def _export_ads_snapshots(spark: Any, config: AdsJobConfig) -> dict[str, int]:
             _row_to_dict(row)
             for row in spark.table(f"{ADS_DATABASE}.{table_name}").where(f"dt = '{config.batch_date}'").collect()
         ]
+        rows = sorted(rows, key=_canonical_row_key)
         _write_jsonl(output_dir / f"{table_name}.jsonl", rows)
         counts[table_name] = len(rows)
     return counts
