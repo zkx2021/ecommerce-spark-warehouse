@@ -37,44 +37,51 @@ class KpiResponse(AdsBaseModel):
 
 
 class SalesTrendItem(AdsBaseModel):
-    date_id: str
-    total_sales_amount: Decimal
-    total_order_count: int
+    sales_amount: Decimal
+    order_count: int
+    paid_user_count: int
 
 
 class ProductRankItem(AdsBaseModel):
+    rank_no: int
     product_id: str
     product_name: str
-    total_sales_amount: Decimal
-    total_order_count: int
+    category: str | None = None
+    sales_quantity: int
+    sales_amount: Decimal
 
 
 class CategoryShareItem(AdsBaseModel):
-    category_name: str
-    total_sales_amount: Decimal
+    category: str
+    sales_amount: Decimal
+    sales_quantity: int
     sales_share: Decimal
 
 
 class UserProfileItem(AdsBaseModel):
-    user_type: str
+    dimension_type: str
+    dimension_value: str
     user_count: int
-    total_sales_amount: Decimal
+    buyer_count: int
+    sales_amount: Decimal
 
 
 class FunnelItem(AdsBaseModel):
-    step_name: str
-    user_count: int
+    stage_name: str
+    stage_order: int
+    stage_count: int
     conversion_rate: Decimal
 
 
 class ListResponse(AdsBaseModel):
-    total: int
+    date_id: str
     items: list[Any]
 
 
 class OverviewResponse(AdsBaseModel):
+    date_id: str
     kpi: KpiResponse
-    sales_trend: list[SalesTrendItem]
+    trend: list[SalesTrendItem]
     product_rank: list[ProductRankItem]
     category_share: list[CategoryShareItem]
     user_profile: list[UserProfileItem]

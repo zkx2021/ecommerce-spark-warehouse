@@ -61,21 +61,56 @@ def test_kpi_schema_serializes_decimal_as_json_number():
 
 
 def test_ads_schema_module_exposes_required_models():
-    for model_name in (
-        "AdsBaseModel",
-        "SalesTrendItem",
-        "ProductRankItem",
-        "CategoryShareItem",
-        "UserProfileItem",
-        "FunnelItem",
-        "ListResponse",
-        "OverviewResponse",
-    ):
-        assert hasattr(schemas, model_name)
+    expected_fields = {
+        "AdsBaseModel": set(),
+        "SalesTrendItem": {"sales_amount", "order_count", "paid_user_count"},
+        "ProductRankItem": {
+            "rank_no",
+            "product_id",
+            "product_name",
+            "category",
+            "sales_quantity",
+            "sales_amount",
+        },
+        "CategoryShareItem": {
+            "category",
+            "sales_amount",
+            "sales_quantity",
+            "sales_share",
+        },
+        "UserProfileItem": {
+            "dimension_type",
+            "dimension_value",
+            "user_count",
+            "buyer_count",
+            "sales_amount",
+        },
+        "FunnelItem": {
+            "stage_name",
+            "stage_order",
+            "stage_count",
+            "conversion_rate",
+        },
+        "ListResponse": {"date_id", "items"},
+        "OverviewResponse": {
+            "date_id",
+            "kpi",
+            "trend",
+            "product_rank",
+            "category_share",
+            "user_profile",
+            "funnel",
+        },
+    }
+
+    for model_name, fields in expected_fields.items():
+        model = getattr(schemas, model_name)
+        assert set(model.model_fields) == fields
 
 
 def test_overview_schema_serializes_nested_decimals_as_json_numbers():
     payload = schemas.OverviewResponse(
+        date_id="2026-07-01",
         kpi=KpiResponse(
             date_id="2026-07-01",
             total_sales_amount=Decimal("123.45"),
@@ -84,45 +119,52 @@ def test_overview_schema_serializes_nested_decimals_as_json_numbers():
             avg_order_amount=Decimal("61.72"),
             payment_conversion_rate=Decimal("0.5000"),
         ),
-        sales_trend=[
+        trend=[
             schemas.SalesTrendItem(
-                date_id="2026-07-01",
-                total_sales_amount=Decimal("123.45"),
-                total_order_count=2,
+                sales_amount=Decimal("123.45"),
+                order_count=2,
+                paid_user_count=1,
             )
         ],
         product_rank=[
             schemas.ProductRankItem(
+                rank_no=1,
                 product_id="sku-1",
                 product_name="Demo Product",
-                total_sales_amount=Decimal("99.90"),
-                total_order_count=3,
+                category=None,
+                sales_quantity=5,
+                sales_amount=Decimal("99.90"),
             )
         ],
         category_share=[
             schemas.CategoryShareItem(
-                category_name="Demo Category",
-                total_sales_amount=Decimal("99.90"),
+                category="Demo Category",
+                sales_amount=Decimal("99.90"),
+                sales_quantity=5,
                 sales_share=Decimal("0.2500"),
             )
         ],
         user_profile=[
             schemas.UserProfileItem(
-                user_type="new",
+                dimension_type="lifecycle",
+                dimension_value="new",
                 user_count=4,
-                total_sales_amount=Decimal("88.80"),
+                buyer_count=2,
+                sales_amount=Decimal("88.80"),
             )
         ],
         funnel=[
             schemas.FunnelItem(
-                step_name="paid",
-                user_count=2,
+                stage_name="paid",
+                stage_order=3,
+                stage_count=2,
                 conversion_rate=Decimal("0.5000"),
             )
         ],
     )
 
     assert payload.model_dump(mode="json") == {
+        "date_id": "2026-07-01",
         "kpi": {
             "date_id": "2026-07-01",
             "total_sales_amount": 123.45,
@@ -131,40 +173,72 @@ def test_overview_schema_serializes_nested_decimals_as_json_numbers():
             "avg_order_amount": 61.72,
             "payment_conversion_rate": 0.5,
         },
-        "sales_trend": [
+        "trend": [
             {
-                "date_id": "2026-07-01",
-                "total_sales_amount": 123.45,
-                "total_order_count": 2,
+                "sales_amount": 123.45,
+                "order_count": 2,
+                "paid_user_count": 1,
             }
         ],
         "product_rank": [
             {
+                "rank_no": 1,
                 "product_id": "sku-1",
                 "product_name": "Demo Product",
-                "total_sales_amount": 99.9,
-                "total_order_count": 3,
+                "category": None,
+                "sales_quantity": 5,
+                "sales_amount": 99.9,
             }
         ],
         "category_share": [
             {
-                "category_name": "Demo Category",
-                "total_sales_amount": 99.9,
+                "category": "Demo Category",
+                "sales_amount": 99.9,
+                "sales_quantity": 5,
                 "sales_share": 0.25,
             }
         ],
         "user_profile": [
             {
-                "user_type": "new",
+                "dimension_type": "lifecycle",
+                "dimension_value": "new",
                 "user_count": 4,
-                "total_sales_amount": 88.8,
+                "buyer_count": 2,
+                "sales_amount": 88.8,
             }
         ],
         "funnel": [
             {
-                "step_name": "paid",
-                "user_count": 2,
+                "stage_name": "paid",
+                "stage_order": 3,
+                "stage_count": 2,
                 "conversion_rate": 0.5,
+            }
+        ],
+    }
+
+
+def test_list_response_uses_date_id_and_items():
+    payload = schemas.ListResponse(
+        date_id="2026-07-01",
+        items=[
+            schemas.CategoryShareItem(
+                category="Demo Category",
+                sales_amount=Decimal("99.90"),
+                sales_quantity=5,
+                sales_share=Decimal("0.2500"),
+            )
+        ],
+    )
+
+    assert payload.model_dump(mode="json") == {
+        "date_id": "2026-07-01",
+        "items": [
+            {
+                "category": "Demo Category",
+                "sales_amount": 99.9,
+                "sales_quantity": 5,
+                "sales_share": 0.25,
             }
         ],
     }
