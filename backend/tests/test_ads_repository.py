@@ -37,6 +37,15 @@ class FakeConnection:
         return self.cursor_instance
 
 
+class FailingCursorConnection:
+    def __init__(self):
+        self.cursor_kwargs = []
+
+    def cursor(self, **kwargs):
+        self.cursor_kwargs.append(kwargs)
+        raise RuntimeError("cannot create cursor")
+
+
 def make_repository(cursor):
     connection = FakeConnection(cursor)
     return AdsRepository(connection), connection
@@ -163,3 +172,21 @@ def test_repository_wraps_database_exceptions():
 
     assert isinstance(exc_info.value.__cause__, RuntimeError)
     assert cursor.closed is True
+
+
+@pytest.mark.parametrize(
+    "repository_call",
+    [
+        lambda repository: repository.get_kpi("2026-07-01"),
+        lambda repository: repository.get_trend("2026-07-01"),
+    ],
+)
+def test_repository_wraps_cursor_creation_exceptions(repository_call):
+    connection = FailingCursorConnection()
+    repository = AdsRepository(connection)
+
+    with pytest.raises(AdsDatabaseUnavailable, match="ADS database query failed") as exc_info:
+        repository_call(repository)
+
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert connection.cursor_kwargs == [{"dictionary": True}]

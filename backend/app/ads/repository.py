@@ -8,24 +8,28 @@ class AdsRepository:
         self.connection = connection
 
     def _fetch_one(self, sql: str, params: tuple[Any, ...] | None = None) -> dict[str, Any] | None:
-        cursor = self.connection.cursor(dictionary=True)
+        cursor = None
         try:
+            cursor = self.connection.cursor(dictionary=True)
             cursor.execute(sql, params)
             return cursor.fetchone()
         except Exception as exc:
             raise AdsDatabaseUnavailable("ADS database query failed") from exc
         finally:
-            cursor.close()
+            if cursor is not None:
+                cursor.close()
 
     def _fetch_all(self, sql: str, params: tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
-        cursor = self.connection.cursor(dictionary=True)
+        cursor = None
         try:
+            cursor = self.connection.cursor(dictionary=True)
             cursor.execute(sql, params)
             return cursor.fetchall()
         except Exception as exc:
             raise AdsDatabaseUnavailable("ADS database query failed") from exc
         finally:
-            cursor.close()
+            if cursor is not None:
+                cursor.close()
 
     def get_latest_date(self) -> str | None:
         row = self._fetch_one(
