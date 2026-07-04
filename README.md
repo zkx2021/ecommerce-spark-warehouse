@@ -15,7 +15,7 @@ The offline warehouse now includes ODS, DWD, DIM, DWS, ADS, and MySQL ADS export
 - Warehouse: Hive
 - Compute: Spark SQL
 - Result store: MySQL
-- Planned API: FastAPI scaffold
+- API: FastAPI ADS data service
 - Planned Vue dashboard: Vue 3 scaffold, ECharts later
 - Deployment: Docker Compose
 
