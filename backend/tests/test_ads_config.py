@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from backend.app.ads import schemas
 from backend.app.ads.schemas import KpiResponse
 from backend.app.config import MySqlSettings
 
@@ -56,4 +57,114 @@ def test_kpi_schema_serializes_decimal_as_json_number():
         "paid_user_count": 1,
         "avg_order_amount": 61.72,
         "payment_conversion_rate": 0.5,
+    }
+
+
+def test_ads_schema_module_exposes_required_models():
+    for model_name in (
+        "AdsBaseModel",
+        "SalesTrendItem",
+        "ProductRankItem",
+        "CategoryShareItem",
+        "UserProfileItem",
+        "FunnelItem",
+        "ListResponse",
+        "OverviewResponse",
+    ):
+        assert hasattr(schemas, model_name)
+
+
+def test_overview_schema_serializes_nested_decimals_as_json_numbers():
+    payload = schemas.OverviewResponse(
+        kpi=KpiResponse(
+            date_id="2026-07-01",
+            total_sales_amount=Decimal("123.45"),
+            total_order_count=2,
+            paid_user_count=1,
+            avg_order_amount=Decimal("61.72"),
+            payment_conversion_rate=Decimal("0.5000"),
+        ),
+        sales_trend=[
+            schemas.SalesTrendItem(
+                date_id="2026-07-01",
+                total_sales_amount=Decimal("123.45"),
+                total_order_count=2,
+            )
+        ],
+        product_rank=[
+            schemas.ProductRankItem(
+                product_id="sku-1",
+                product_name="Demo Product",
+                total_sales_amount=Decimal("99.90"),
+                total_order_count=3,
+            )
+        ],
+        category_share=[
+            schemas.CategoryShareItem(
+                category_name="Demo Category",
+                total_sales_amount=Decimal("99.90"),
+                sales_share=Decimal("0.2500"),
+            )
+        ],
+        user_profile=[
+            schemas.UserProfileItem(
+                user_type="new",
+                user_count=4,
+                total_sales_amount=Decimal("88.80"),
+            )
+        ],
+        funnel=[
+            schemas.FunnelItem(
+                step_name="paid",
+                user_count=2,
+                conversion_rate=Decimal("0.5000"),
+            )
+        ],
+    )
+
+    assert payload.model_dump(mode="json") == {
+        "kpi": {
+            "date_id": "2026-07-01",
+            "total_sales_amount": 123.45,
+            "total_order_count": 2,
+            "paid_user_count": 1,
+            "avg_order_amount": 61.72,
+            "payment_conversion_rate": 0.5,
+        },
+        "sales_trend": [
+            {
+                "date_id": "2026-07-01",
+                "total_sales_amount": 123.45,
+                "total_order_count": 2,
+            }
+        ],
+        "product_rank": [
+            {
+                "product_id": "sku-1",
+                "product_name": "Demo Product",
+                "total_sales_amount": 99.9,
+                "total_order_count": 3,
+            }
+        ],
+        "category_share": [
+            {
+                "category_name": "Demo Category",
+                "total_sales_amount": 99.9,
+                "sales_share": 0.25,
+            }
+        ],
+        "user_profile": [
+            {
+                "user_type": "new",
+                "user_count": 4,
+                "total_sales_amount": 88.8,
+            }
+        ],
+        "funnel": [
+            {
+                "step_name": "paid",
+                "user_count": 2,
+                "conversion_rate": 0.5,
+            }
+        ],
     }
