@@ -75,7 +75,7 @@ class FunnelItem(AdsBaseModel):
 
 class ListResponse(AdsBaseModel):
     date_id: str
-    items: list[Any]
+    items: list[dict[str, Any]]
 
 
 class OverviewResponse(AdsBaseModel):

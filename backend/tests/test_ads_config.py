@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+import pytest
+from pydantic import ValidationError
+
 from backend.app.ads import schemas
 from backend.app.ads.schemas import KpiResponse
 from backend.app.config import MySqlSettings
@@ -241,24 +244,13 @@ def test_product_rank_schema_preserves_numeric_product_id():
 def test_list_response_uses_date_id_and_items():
     payload = schemas.ListResponse(
         date_id="2026-07-01",
-        items=[
-            schemas.CategoryShareItem(
-                category="Demo Category",
-                sales_amount=Decimal("99.90"),
-                sales_quantity=5,
-                sales_share=Decimal("0.2500"),
-            )
-        ],
+        items=[{"metric": 1}],
     )
 
     assert payload.model_dump(mode="json") == {
         "date_id": "2026-07-01",
-        "items": [
-            {
-                "category": "Demo Category",
-                "sales_amount": 99.9,
-                "sales_quantity": 5,
-                "sales_share": 0.25,
-            }
-        ],
+        "items": [{"metric": 1}],
     }
+
+    with pytest.raises(ValidationError):
+        schemas.ListResponse(date_id="2026-07-01", items=["bad"])
