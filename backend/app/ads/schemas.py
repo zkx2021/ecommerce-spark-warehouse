@@ -44,7 +44,7 @@ class SalesTrendItem(AdsBaseModel):
 
 class ProductRankItem(AdsBaseModel):
     rank_no: int
-    product_id: str
+    product_id: int
     product_name: str
     category: str | None = None
     sales_quantity: int

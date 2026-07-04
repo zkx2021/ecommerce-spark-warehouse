@@ -129,7 +129,7 @@ def test_overview_schema_serializes_nested_decimals_as_json_numbers():
         product_rank=[
             schemas.ProductRankItem(
                 rank_no=1,
-                product_id="sku-1",
+                product_id=101,
                 product_name="Demo Product",
                 category=None,
                 sales_quantity=5,
@@ -183,7 +183,7 @@ def test_overview_schema_serializes_nested_decimals_as_json_numbers():
         "product_rank": [
             {
                 "rank_no": 1,
-                "product_id": "sku-1",
+                "product_id": 101,
                 "product_name": "Demo Product",
                 "category": None,
                 "sales_quantity": 5,
@@ -215,6 +215,26 @@ def test_overview_schema_serializes_nested_decimals_as_json_numbers():
                 "conversion_rate": 0.5,
             }
         ],
+    }
+
+
+def test_product_rank_schema_preserves_numeric_product_id():
+    payload = schemas.ProductRankItem(
+        rank_no=1,
+        product_id=101,
+        product_name="Demo Product",
+        category="Demo Category",
+        sales_quantity=5,
+        sales_amount=Decimal("99.90"),
+    )
+
+    assert payload.model_dump(mode="json") == {
+        "rank_no": 1,
+        "product_id": 101,
+        "product_name": "Demo Product",
+        "category": "Demo Category",
+        "sales_quantity": 5,
+        "sales_amount": 99.9,
     }
 
 
