@@ -29,6 +29,13 @@ def test_backend_readme_documents_ads_api_setup_and_endpoints():
         assert text in readme
 
 
+def test_root_readme_documents_current_ads_api_backend():
+    readme = read_project_file("README.md")
+
+    assert "API: FastAPI ADS data service" in readme
+    assert "Planned API scaffold" not in readme
+
+
 def test_foundation_check_includes_ads_backend_files():
     check_script = read_project_file("deploy/scripts/check.ps1")
 
