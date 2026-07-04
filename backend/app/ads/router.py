@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import suppress
 from typing import Annotated, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,8 +19,17 @@ DateQuery = Annotated[
 ResponseT = TypeVar("ResponseT")
 
 
-def get_ads_service() -> AdsService:
-    return AdsService(AdsRepository(connect_mysql()))
+def get_ads_service() -> Iterator[AdsService]:
+    try:
+        connection = connect_mysql()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="ADS database query failed") from exc
+
+    try:
+        yield AdsService(AdsRepository(connection))
+    finally:
+        with suppress(Exception):
+            connection.close()
 
 
 AdsServiceDependency = Annotated[AdsService, Depends(get_ads_service)]

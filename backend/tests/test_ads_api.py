@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.ads import router as ads_router
 from backend.app.ads.errors import AdsDataNotFound, AdsDatabaseUnavailable
 from backend.app.ads.router import get_ads_service
 from backend.app.ads.schemas import (
@@ -106,6 +107,33 @@ class FakeAdsService:
             user_profile=self.user_profile,
             funnel=self.funnel,
         )
+
+
+class FakeDbCursor:
+    def __init__(self, one):
+        self.one = one
+        self.closed = False
+
+    def execute(self, sql, params=None):
+        pass
+
+    def fetchone(self):
+        return self.one
+
+    def close(self):
+        self.closed = True
+
+
+class FakeDbConnection:
+    def __init__(self, cursor):
+        self.cursor_instance = cursor
+        self.closed = False
+
+    def cursor(self, **kwargs):
+        return self.cursor_instance
+
+    def close(self):
+        self.closed = True
 
 
 @pytest.fixture
@@ -267,3 +295,40 @@ def test_database_unavailable_maps_to_503(fake_service):
 
     assert response.status_code == 503
     assert response.json() == {"detail": "ADS database query failed"}
+
+
+def test_mysql_connection_failure_maps_to_503(monkeypatch):
+    app.dependency_overrides.pop(get_ads_service, None)
+    monkeypatch.setattr(
+        ads_router,
+        "connect_mysql",
+        lambda: (_ for _ in ()).throw(RuntimeError("database is down")),
+    )
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.get("/api/ads/kpi?date=2026-07-01")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "ADS database query failed"}
+
+
+def test_ads_service_dependency_closes_mysql_connection(monkeypatch):
+    app.dependency_overrides.pop(get_ads_service, None)
+    cursor = FakeDbCursor(
+        {
+            "date_id": "2026-07-01",
+            "total_sales_amount": Decimal("123.45"),
+            "total_order_count": 3,
+            "paid_user_count": 2,
+            "avg_order_amount": Decimal("41.15"),
+            "payment_conversion_rate": Decimal("0.6667"),
+        }
+    )
+    connection = FakeDbConnection(cursor)
+    monkeypatch.setattr(ads_router, "connect_mysql", lambda: connection)
+    client = TestClient(app)
+
+    response = client.get("/api/ads/kpi?date=2026-07-01")
+
+    assert response.status_code == 200
+    assert connection.closed is True
