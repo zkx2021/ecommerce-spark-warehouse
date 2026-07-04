@@ -5,10 +5,12 @@ from backend.app.ads.repository import AdsRepository
 
 
 class FakeCursor:
-    def __init__(self, one=None, all_rows=None, fail=False):
+    def __init__(self, one=None, all_rows=None, fail=False, fetch_fail=False, close_fail=False):
         self.one = one
         self.all_rows = all_rows or []
         self.fail = fail
+        self.fetch_fail = fetch_fail
+        self.close_fail = close_fail
         self.executed = []
         self.closed = False
 
@@ -18,13 +20,19 @@ class FakeCursor:
         self.executed.append((sql, params))
 
     def fetchone(self):
+        if self.fetch_fail:
+            raise RuntimeError("fetch failed")
         return self.one
 
     def fetchall(self):
+        if self.fetch_fail:
+            raise RuntimeError("fetch failed")
         return self.all_rows
 
     def close(self):
         self.closed = True
+        if self.close_fail:
+            raise RuntimeError("close failed")
 
 
 class FakeConnection:
@@ -171,6 +179,26 @@ def test_repository_wraps_database_exceptions():
         repository.get_kpi("2026-07-01")
 
     assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert cursor.closed is True
+
+
+@pytest.mark.parametrize(
+    "cursor,repository_call",
+    [
+        (FakeCursor(fetch_fail=True), lambda repository: repository.get_kpi("2026-07-01")),
+        (FakeCursor(fetch_fail=True), lambda repository: repository.get_trend("2026-07-01")),
+        (FakeCursor(fail=True, close_fail=True), lambda repository: repository.get_kpi("2026-07-01")),
+        (FakeCursor(fetch_fail=True, close_fail=True), lambda repository: repository.get_kpi("2026-07-01")),
+    ],
+)
+def test_repository_preserves_query_exception_when_cleanup_fails(cursor, repository_call):
+    repository, _connection = make_repository(cursor)
+
+    with pytest.raises(AdsDatabaseUnavailable, match="ADS database query failed") as exc_info:
+        repository_call(repository)
+
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert str(exc_info.value.__cause__) != "close failed"
     assert cursor.closed is True
 
 

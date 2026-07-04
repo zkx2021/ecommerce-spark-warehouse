@@ -1,3 +1,4 @@
+from contextlib import suppress
 from typing import Any
 
 from backend.app.ads.errors import AdsDatabaseUnavailable
@@ -17,7 +18,8 @@ class AdsRepository:
             raise AdsDatabaseUnavailable("ADS database query failed") from exc
         finally:
             if cursor is not None:
-                cursor.close()
+                with suppress(Exception):
+                    cursor.close()
 
     def _fetch_all(self, sql: str, params: tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
         cursor = None
@@ -29,7 +31,8 @@ class AdsRepository:
             raise AdsDatabaseUnavailable("ADS database query failed") from exc
         finally:
             if cursor is not None:
-                cursor.close()
+                with suppress(Exception):
+                    cursor.close()
 
     def get_latest_date(self) -> str | None:
         row = self._fetch_one(
