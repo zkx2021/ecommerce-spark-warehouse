@@ -221,4 +221,30 @@ assert.doesNotMatch(cssSource, /radial-gradient/)
 
 assert.doesNotMatch(appSource, /<style scoped>/)
 
+const readmeSource = read('README.md')
+assert.match(readmeSource, /Vue\/ECharts dashboard/)
+assert.match(readmeSource, /FastAPI ADS API/)
+assert.match(readmeSource, /Dashboard: Vue 3 \+ ECharts dashboard/)
+assert.match(readmeSource, /FastAPI ADS API -> Vue\/ECharts dashboard/)
+assert.match(readmeSource, /Current Data Flow/)
+assert.doesNotMatch(readmeSource, /planned Vue/i)
+assert.doesNotMatch(readmeSource, /future Vue/i)
+
+const foundationCheckSource = read('deploy/scripts/check.ps1')
+for (const file of [
+  'frontend/src/App.vue',
+  'frontend/src/main.js',
+  'frontend/src/components/BaseChart.vue',
+  'frontend/src/components/KpiCard.vue',
+  'frontend/src/components/StatusBadge.vue',
+  'frontend/src/components/DashboardPanel.vue',
+  'frontend/src/data/mockAds.js',
+  'frontend/src/services/adsApi.js',
+  'frontend/src/utils/formatters.js',
+  'frontend/src/styles/dashboard.css',
+  'frontend/tests/dashboard-assets.test.mjs'
+]) {
+  assert.match(foundationCheckSource, new RegExp(file.replaceAll('/', '\\\\')))
+}
+
 console.log('Dashboard asset checks passed.')

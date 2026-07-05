@@ -4,7 +4,7 @@
 
 ## Project Goal
 
-This project builds an offline ecommerce data warehouse using Spark, HDFS, and Hive. It collects ecommerce-like data through a configurable crawler, stores raw data in HDFS, builds layered Hive tables, computes offline metrics with Spark SQL, and exports ADS results to MySQL for the FastAPI ADS data service and a future Vue/ECharts dashboard UI.
+This project builds an offline ecommerce data warehouse using Spark, HDFS, and Hive. It collects ecommerce-like data through a configurable crawler, stores raw data in HDFS, builds layered Hive tables, computes offline metrics with Spark SQL, and exports ADS results to MySQL for the FastAPI ADS API and an active Vue/ECharts dashboard UI.
 
 The offline warehouse now includes ODS, DWD, DIM, DWS, ADS, and MySQL ADS export assets. The dim, dws, ads layers prepare dashboard-ready metrics after the detailed DWD layer.
 
@@ -16,15 +16,15 @@ The offline warehouse now includes ODS, DWD, DIM, DWS, ADS, and MySQL ADS export
 - Compute: Spark SQL
 - Result store: MySQL
 - API: FastAPI ADS data service
-- Planned Vue dashboard: Vue 3 scaffold, ECharts later
+- Dashboard: Vue 3 + ECharts dashboard
 - Deployment: Docker Compose
 
-## Current And Planned Data Flow
+## Current Data Flow
 
 ```text
 Crawler -> Local raw files -> HDFS -> Hive ODS/DWD/DIM/DWS/ADS
         -> Spark offline jobs -> MySQL ADS result tables
-        -> FastAPI ADS API -> planned Vue + ECharts dashboard
+        -> FastAPI ADS API -> Vue/ECharts dashboard
 ```
 
 ## Repository Structure
@@ -33,7 +33,7 @@ Crawler -> Local raw files -> HDFS -> Hive ODS/DWD/DIM/DWS/ADS
 crawler/      Data collection module
 warehouse/    HDFS, Hive, and Spark warehouse assets
 backend/      FastAPI ADS API backend
-frontend/     Planned Vue dashboard scaffold
+frontend/     Vue/ECharts dashboard UI
 deploy/       Local and server deployment scripts
 docs/         Architecture, data model, deployment, and GitHub workflow docs
 ```
