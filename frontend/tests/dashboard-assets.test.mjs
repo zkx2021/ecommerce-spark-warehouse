@@ -49,6 +49,12 @@ assert.match(adsApi, /\/api\/ads\/overview/)
 assert.match(adsApi, /URLSearchParams/)
 assert.match(adsApi, /throw new Error/)
 
+const viteConfigSource = read('frontend/vite.config.js')
+assert.match(viteConfigSource, /server\s*:/)
+assert.match(viteConfigSource, /proxy\s*:/)
+assert.match(viteConfigSource, /['"]\/api['"]/)
+assert.match(viteConfigSource, /http:\/\/127\.0\.0\.1:8000/)
+
 const formatters = read('frontend/src/utils/formatters.js')
 for (const formatter of ['formatMoney', 'formatCount', 'formatPercent', 'formatDateTime']) {
   assert.match(formatters, new RegExp(`export function ${formatter}`))
