@@ -196,4 +196,29 @@ for (const pattern of [
   assert.match(appSource, pattern)
 }
 
+assertFile('frontend/src/styles/dashboard.css')
+
+const mainSource = read('frontend/src/main.js')
+assert.match(mainSource, /styles\/dashboard\.css/)
+
+const cssSource = read('frontend/src/styles/dashboard.css')
+for (const token of [
+  'dashboard-shell',
+  'dashboard-grid',
+  'dashboard-panel',
+  'status-badge--api',
+  'status-badge--mock',
+  '@media'
+]) {
+  assert.match(cssSource, new RegExp(token), `dashboard.css should include ${token}`)
+}
+
+assert.match(cssSource, /repeat\(4,\s*minmax\(0,\s*1fr\)\)/)
+assert.match(cssSource, /repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
+assert.match(cssSource, /flex-wrap:\s*wrap/)
+assert.match(cssSource, /overflow-wrap:\s*anywhere/)
+assert.doesNotMatch(cssSource, /radial-gradient/)
+
+assert.doesNotMatch(appSource, /<style scoped>/)
+
 console.log('Dashboard asset checks passed.')
