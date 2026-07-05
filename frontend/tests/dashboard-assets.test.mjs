@@ -136,4 +136,33 @@ const formattedDateTime = formatDateTime(new Date('2026-07-01T12:34:56+08:00'))
 assert.equal(typeof formattedDateTime, 'string')
 assert.ok(formattedDateTime.length > 0)
 
+for (const file of [
+  'frontend/src/components/BaseChart.vue',
+  'frontend/src/components/KpiCard.vue',
+  'frontend/src/components/StatusBadge.vue',
+  'frontend/src/components/DashboardPanel.vue'
+]) {
+  assertFile(file)
+}
+
+const baseChartSource = read('frontend/src/components/BaseChart.vue')
+assert.match(baseChartSource, /echarts\/core/)
+assert.match(baseChartSource, /ResizeObserver|resize/)
+assert.match(baseChartSource, /v-show="!isEmpty"/)
+assert.match(baseChartSource, /if \(isEmpty\.value\)/)
+assert.match(baseChartSource, /dispose/)
+
+const kpiCardSource = read('frontend/src/components/KpiCard.vue')
+assert.match(kpiCardSource, /defineProps/)
+assert.match(kpiCardSource, /label/)
+assert.match(kpiCardSource, /value/)
+
+const statusBadgeSource = read('frontend/src/components/StatusBadge.vue')
+assert.match(statusBadgeSource, /API 数据/)
+assert.match(statusBadgeSource, /Mock 数据/)
+
+const panelSource = read('frontend/src/components/DashboardPanel.vue')
+assert.match(panelSource, /<slot/)
+assert.match(panelSource, /panel-title/)
+
 console.log('Dashboard asset checks passed.')
