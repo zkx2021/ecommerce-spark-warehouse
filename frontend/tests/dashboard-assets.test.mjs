@@ -165,4 +165,35 @@ const panelSource = read('frontend/src/components/DashboardPanel.vue')
 assert.match(panelSource, /<slot/)
 assert.match(panelSource, /panel-title/)
 
+const appSource = read('frontend/src/App.vue')
+for (const token of [
+  'fetchAdsOverview',
+  'mockAdsOverview',
+  'StatusBadge',
+  'KpiCard',
+  'BaseChart',
+  'DashboardPanel',
+  'setInterval',
+  'sourceStatus',
+  'categoryShareOption',
+  'productRankOption',
+  'funnelOption'
+]) {
+  assert.match(appSource, new RegExp(token), `App.vue should include ${token}`)
+}
+assert.match(appSource, /refreshRequestId/)
+assert.match(appSource, /requestId !== refreshRequestId/)
+for (const pattern of [
+  /catch/,
+  /finally/,
+  /clearInterval/,
+  /onBeforeUnmount/,
+  /type: 'line'/,
+  /type: 'bar'/,
+  /type: 'pie'/,
+  /type: 'funnel'/
+]) {
+  assert.match(appSource, pattern)
+}
+
 console.log('Dashboard asset checks passed.')
