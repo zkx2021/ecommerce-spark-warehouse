@@ -1,0 +1,271 @@
+:root {
+  color: #eef5ff;
+  background: #070b14;
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #070b14;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.dashboard-shell {
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #07111f 0%, #0b1020 48%, #101827 100%);
+}
+
+.dashboard-header,
+.status-strip,
+.kpi-grid,
+.dashboard-grid {
+  width: min(1680px, 100%);
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.dashboard-eyebrow {
+  margin: 0 0 8px;
+  color: #5eead4;
+  font-size: 14px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.control-field,
+.auto-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #bfd3ea;
+  font-size: 13px;
+}
+
+.control-field input {
+  min-height: 36px;
+  border: 1px solid #30415f;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #0f1a2c;
+  color: #eef5ff;
+}
+
+.dashboard-controls button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 14px;
+  background: #2dd4bf;
+  color: #06111f;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dashboard-controls button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status-badge--api {
+  background: rgba(45, 212, 191, 0.16);
+  color: #5eead4;
+}
+
+.status-badge--mock,
+.status-badge--error {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+}
+
+.status-badge--loading {
+  background: rgba(96, 165, 250, 0.16);
+  color: #93c5fd;
+}
+
+.status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #9fb1c9;
+  font-size: 13px;
+}
+
+.status-strip__warning {
+  color: #fbbf24;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.kpi-card,
+.dashboard-panel {
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-radius: 8px;
+  background: rgba(12, 22, 38, 0.86);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+}
+
+.kpi-card {
+  min-width: 0;
+  padding: 16px;
+}
+
+.kpi-card__label,
+.kpi-card__hint,
+.panel-meta {
+  min-width: 0;
+  color: #9fb1c9;
+  overflow-wrap: anywhere;
+}
+
+.kpi-card__value {
+  display: block;
+  margin-top: 8px;
+  color: #eef5ff;
+  font-size: 26px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.95fr) minmax(420px, 1.7fr) minmax(240px, 0.95fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.dashboard-column {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.dashboard-panel--hero {
+  min-height: 100%;
+}
+
+.dashboard-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 10px;
+}
+
+.panel-title {
+  flex: 1 1 180px;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.panel-meta {
+  flex: 0 1 auto;
+}
+
+.chart-frame,
+.chart-canvas {
+  width: 100%;
+}
+
+.chart-empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  color: #9fb1c9;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-controls {
+    justify-content: flex-start;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-shell {
+    padding: 16px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 26px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-controls,
+  .control-field,
+  .dashboard-controls button {
+    width: 100%;
+  }
+
+  .control-field input {
+    flex: 1;
+  }
+}
