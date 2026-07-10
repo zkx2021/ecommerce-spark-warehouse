@@ -6,6 +6,8 @@ $requiredPaths = @(
   "docker-compose.yml",
   "crawler/config/sources.json",
   "backend/README.md",
+  ".dockerignore",
+  "backend/Dockerfile",
   "backend/app/main.py",
   "backend/app/config.py",
   "backend/app/database.py",
