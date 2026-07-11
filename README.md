@@ -43,3 +43,31 @@ docs/         Architecture, data model, deployment, and GitHub workflow docs
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/scripts/check.ps1
 ```
+
+## Local Deployment
+
+The integrated local deployment connects MySQL ADS tables to the FastAPI API and the Vue/ECharts dashboard:
+
+```text
+MySQL ADS tables -> FastAPI ADS API -> Vue/ECharts dashboard
+```
+
+Start the stack with Docker Compose:
+
+```powershell
+docker compose up -d --build
+```
+
+Default local endpoints:
+
+- Dashboard: `http://127.0.0.1:8088`
+- FastAPI health: `http://127.0.0.1:8000/api/health`
+- ADS overview: `http://127.0.0.1:8000/api/ads/overview`
+
+Run the deployment smoke test after services are running:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/scripts/smoke_test.ps1 -BackendBaseUrl http://127.0.0.1:8000 -FrontendBaseUrl http://127.0.0.1:8088
+```
+
+See [docs/deployment-integration.md](docs/deployment-integration.md) for ports, environment variables, startup paths, and the difference between real API data and dashboard mock fallback.

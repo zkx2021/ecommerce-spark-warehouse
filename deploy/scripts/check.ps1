@@ -48,6 +48,7 @@ $requiredPaths = @(
   "warehouse/spark/jobs/ads_job.py",
   "warehouse/spark/jobs/ads_sql.py",
   "warehouse/scripts/export_ads_mysql.py",
+  "docs/deployment-integration.md",
   "docs/github-workflow.md",
   "deploy/hadoop/core-site.xml",
   "deploy/hadoop/hdfs-site.xml"
