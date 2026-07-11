@@ -17,6 +17,8 @@ $requiredPaths = @(
   "backend/app/ads/schemas.py",
   "backend/app/ads/errors.py",
   "frontend/package.json",
+  "frontend/Dockerfile",
+  "frontend/nginx.conf",
   "frontend\src\App.vue",
   "frontend\src\main.js",
   "frontend\src\components\BaseChart.vue",
