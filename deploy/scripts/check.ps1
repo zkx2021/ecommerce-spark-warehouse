@@ -58,4 +58,21 @@ foreach ($path in $requiredPaths) {
   }
 }
 
+function Assert-FileContains {
+  param(
+    [string]$Path,
+    [string]$Pattern,
+    [string]$Description
+  )
+
+  if (-not (Select-String -LiteralPath $Path -Pattern $Pattern -Quiet)) {
+    throw "Missing required configuration: $Description"
+  }
+}
+
+Assert-FileContains "docker-compose.yml" "^\s{2}backend:\s*$" "docker compose backend service"
+Assert-FileContains "docker-compose.yml" "^\s{2}frontend:\s*$" "docker compose frontend service"
+Assert-FileContains ".env.example" "^BACKEND_PORT=8000$" "backend host port"
+Assert-FileContains ".env.example" "^FRONTEND_PORT=8088$" "frontend host port"
+
 Write-Host "Project foundation check passed."
