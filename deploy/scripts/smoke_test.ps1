@@ -61,6 +61,19 @@ function Convert-SmokeJson {
   }
 }
 
+function Assert-HealthPayload {
+  param(
+    [object]$Health,
+    [string]$Description
+  )
+
+  Assert-ObjectProperties $Health @("status", "service") $Description
+  if ($Health.status -ne "ok") {
+    Write-Fail "$Description status expected 'ok' but got '$($Health.status)'"
+    throw "$Description status is not ok"
+  }
+}
+
 function Assert-ObjectProperties {
   param(
     [object]$Object,
@@ -83,11 +96,7 @@ try {
   $healthUrl = Join-Url $BackendBaseUrl "/api/health"
   $healthResponse = Invoke-SmokeRequest $healthUrl "Backend health endpoint"
   $health = Convert-SmokeJson $healthResponse.Content "Backend health endpoint"
-  Assert-ObjectProperties $health @("status", "service") "Backend health payload"
-  if ($health.status -ne "ok") {
-    Write-Fail "Backend health status expected 'ok' but got '$($health.status)'"
-    throw "Backend health status is not ok"
-  }
+  Assert-HealthPayload $health "Backend health payload"
   Write-Pass "Backend health payload shape is valid"
 
   $overviewUrl = Join-Url $BackendBaseUrl "/api/ads/overview"
@@ -109,6 +118,12 @@ try {
     throw "Frontend dashboard HTML missing Vue app root"
   }
   Write-Pass "Frontend dashboard page shape is valid"
+
+  $frontendHealthUrl = Join-Url $FrontendBaseUrl "/api/health"
+  $frontendHealthResponse = Invoke-SmokeRequest $frontendHealthUrl "Frontend API proxy health endpoint"
+  $frontendHealth = Convert-SmokeJson $frontendHealthResponse.Content "Frontend API proxy health endpoint"
+  Assert-HealthPayload $frontendHealth "Frontend API proxy health payload"
+  Write-Pass "Frontend API proxy path is valid"
 
   Write-Host "Deployment smoke test passed."
 } catch {

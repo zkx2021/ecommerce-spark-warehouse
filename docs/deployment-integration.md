@@ -31,7 +31,8 @@ Copy `.env.example` to `.env` if you need local overrides. Docker Compose uses t
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `MYSQL_HOST` | `mysql` | MySQL service hostname for warehouse scripts |
-| `MYSQL_PORT` | `3306` | MySQL container and host port |
+| `MYSQL_PORT` | `3306` | MySQL host port |
+| `MYSQL_ROOT_PASSWORD` | `root_password` | MySQL root password for the local container |
 | `MYSQL_DATABASE` | `ecommerce_ads` | ADS result database |
 | `MYSQL_USER` | `ecommerce` | MySQL application user |
 | `MYSQL_PASSWORD` | `ecommerce_password` | MySQL application password |
@@ -79,7 +80,18 @@ docker compose config
 
 ## Smoke Test
 
-After services are running, verify the deployed API and dashboard:
+The smoke test expects ADS rows to exist in MySQL. On a fresh stack, initialize and export a batch before running it:
+
+```powershell
+python crawler/run.py --batch-date 2026-07-01
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/check_ods_inputs.ps1 -BatchDate 2026-07-01
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/load_ods.ps1 -BatchDate 2026-07-01
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_dwd.ps1 -BatchDate 2026-07-01
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_ads.ps1 -BatchDate 2026-07-01
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/export_ads_mysql.ps1 -BatchDate 2026-07-01
+```
+
+After services are running and ADS data has been exported to MySQL, verify the deployed API and dashboard:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/scripts/smoke_test.ps1 -BackendBaseUrl http://127.0.0.1:8000 -FrontendBaseUrl http://127.0.0.1:8088
@@ -90,6 +102,7 @@ The script checks:
 - `/api/health` availability and `status=ok`
 - `/api/ads/overview` top-level payload shape
 - dashboard HTML availability and Vue app root
+- frontend `/api/health` proxying through Nginx or Vite
 
 If services are not running, the script exits non-zero with a clear `[FAIL]` message.
 

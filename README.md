@@ -70,4 +70,4 @@ Run the deployment smoke test after services are running:
 powershell -ExecutionPolicy Bypass -File deploy/scripts/smoke_test.ps1 -BackendBaseUrl http://127.0.0.1:8000 -FrontendBaseUrl http://127.0.0.1:8088
 ```
 
-See [docs/deployment-integration.md](docs/deployment-integration.md) for ports, environment variables, startup paths, and the difference between real API data and dashboard mock fallback.
+The smoke test expects ADS rows to exist in MySQL. See [docs/deployment-integration.md](docs/deployment-integration.md) for ports, environment variables, startup paths, ADS export steps, and the difference between real API data and dashboard mock fallback.
