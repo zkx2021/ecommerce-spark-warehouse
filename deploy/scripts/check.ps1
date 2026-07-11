@@ -6,6 +6,8 @@ $requiredPaths = @(
   "docker-compose.yml",
   "crawler/config/sources.json",
   "backend/README.md",
+  ".dockerignore",
+  "backend/Dockerfile",
   "backend/app/main.py",
   "backend/app/config.py",
   "backend/app/database.py",
@@ -15,6 +17,8 @@ $requiredPaths = @(
   "backend/app/ads/schemas.py",
   "backend/app/ads/errors.py",
   "frontend/package.json",
+  "frontend/Dockerfile",
+  "frontend/nginx.conf",
   "frontend\src\App.vue",
   "frontend\src\main.js",
   "frontend\src\components\BaseChart.vue",
@@ -33,6 +37,7 @@ $requiredPaths = @(
   "warehouse/hive/dws/create_dws_tables.sql",
   "warehouse/hive/ads/create_ads_tables.sql",
   "deploy/mysql/init/02-create-ads-tables.sql",
+  "deploy/scripts/smoke_test.ps1",
   "warehouse/scripts/check_ods_inputs.ps1",
   "warehouse/scripts/load_ods.ps1",
   "warehouse/scripts/run_dwd.ps1",
@@ -43,6 +48,7 @@ $requiredPaths = @(
   "warehouse/spark/jobs/ads_job.py",
   "warehouse/spark/jobs/ads_sql.py",
   "warehouse/scripts/export_ads_mysql.py",
+  "docs/deployment-integration.md",
   "docs/github-workflow.md",
   "deploy/hadoop/core-site.xml",
   "deploy/hadoop/hdfs-site.xml"
@@ -53,5 +59,24 @@ foreach ($path in $requiredPaths) {
     throw "Missing required path: $path"
   }
 }
+
+function Assert-FileContains {
+  param(
+    [string]$Path,
+    [string]$Pattern,
+    [string]$Description
+  )
+
+  if (-not (Select-String -LiteralPath $Path -Pattern $Pattern -Quiet)) {
+    throw "Missing required configuration: $Description"
+  }
+}
+
+Assert-FileContains "docker-compose.yml" "^\s{2}backend:\s*$" "docker compose backend service"
+Assert-FileContains "docker-compose.yml" "^\s{2}frontend:\s*$" "docker compose frontend service"
+Assert-FileContains ".env.example" "^BACKEND_PORT=8000$" "backend host port"
+Assert-FileContains ".env.example" "^FRONTEND_PORT=8088$" "frontend host port"
+Assert-FileContains "deploy/scripts/smoke_test.ps1" "BackendBaseUrl" "smoke test backend URL parameter"
+Assert-FileContains "deploy/scripts/smoke_test.ps1" "FrontendBaseUrl" "smoke test frontend URL parameter"
 
 Write-Host "Project foundation check passed."

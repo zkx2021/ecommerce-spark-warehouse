@@ -37,10 +37,10 @@ services:
     image: mysql:8.4
     container_name: esw-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: ecommerce_ads
-      MYSQL_USER: ecommerce
-      MYSQL_PASSWORD: ecommerce_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecommerce_ads}
+      MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce_password}
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 10s
@@ -48,10 +48,59 @@ services:
       retries: 10
       start_period: 30s
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./deploy/mysql/init:/docker-entrypoint-initdb.d:ro
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ecommerce-spark-warehouse-backend:local
+    container_name: esw-backend
+    restart: unless-stopped
+    environment:
+      ADS_MYSQL_HOST: mysql
+      ADS_MYSQL_PORT: "3306"
+      ADS_MYSQL_DATABASE: ${MYSQL_DATABASE:-ecommerce_ads}
+      ADS_MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      ADS_MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce_password}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/api/health',
+          timeout=3).read()"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ecommerce-spark-warehouse-frontend:local
+    container_name: esw-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8088}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   spark-master:
     image: bitnami/spark:3.5
@@ -81,10 +130,10 @@ services:
       SERVICE_NAME: metastore
       DB_DRIVER: mysql
       SERVICE_OPTS: >-
-        -Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/hive_metastore
+        -Djavax.jdo.option.ConnectionURL=jdbc:mysql://mysql:3306/${MYSQL_HIVE_METASTORE_DATABASE:-hive_metastore}
         -Djavax.jdo.option.ConnectionDriverName=com.mysql.cj.jdbc.Driver
-        -Djavax.jdo.option.ConnectionUserName=ecommerce
-        -Djavax.jdo.option.ConnectionPassword=ecommerce_password
+        -Djavax.jdo.option.ConnectionUserName=${MYSQL_USER:-ecommerce}
+        -Djavax.jdo.option.ConnectionPassword=${MYSQL_PASSWORD:-ecommerce_password}
         -Dhive.metastore.warehouse.dir=hdfs://namenode:8020/user/hive/warehouse
     depends_on:
       mysql:
