@@ -253,9 +253,24 @@ foreach ($record in $summary.stages) {
 
 $summary.finished_at = (Get-Date).ToString("o")
 $summary.status = if ($failedStage) { "failed" } else { "success" }
+
+if ($failedStage) {
+  $failureSeen = $false
+  foreach ($record in $summary.stages) {
+    if ($record.name -eq $failedStage) {
+      $failureSeen = $true
+      continue
+    }
+    if ($failureSeen -and $record.status -ne "skipped") {
+      $record.status = "not_run"
+    }
+  }
+}
+
 Write-RunSummary -Path $summaryPath -Summary $summary
 
 if ($failedStage) {
+  Write-Host "To resume after fixing the issue, rerun with: -StartFrom $failedStage"
   throw "Offline batch failed at stage $failedStage. Summary: $summaryPath"
 }
 

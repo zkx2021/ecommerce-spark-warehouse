@@ -97,3 +97,16 @@ def test_offline_batch_runner_captures_output_and_fails_fast():
     assert "redirectstandardoutput" in script
     assert "redirectstandarderror" in script
     assert 'throw "offline batch failed at stage' in script
+
+
+def test_offline_batch_runner_documents_resume_and_skip_logic_in_code():
+    script = _read(RUNNER)
+
+    assert "get-selectedstages" in script
+    assert "[array]::indexof($stageorder, $startfrom)" in script
+    assert "$skiplookup.containskey($stage)" in script
+    assert "no stages selected" in script
+    assert "start_from = $startfrom" in script
+    assert "skip_stages = @($skipstages)" in script
+    assert "$failureseen = $false" in script
+    assert "to resume after fixing the issue, rerun with: -startfrom $failedstage" in script
