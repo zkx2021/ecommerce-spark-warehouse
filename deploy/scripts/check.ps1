@@ -27,6 +27,7 @@ $requiredPaths = @(
   "frontend\src\components\DashboardPanel.vue",
   "frontend\src\data\mockAds.js",
   "frontend\src\services\adsApi.js",
+  "frontend\src\utils\categoryShare.js",
   "frontend\src\utils\formatters.js",
   "frontend\src\styles\dashboard.css",
   "frontend\tests\dashboard-assets.test.mjs",
