@@ -39,6 +39,7 @@ Copy `.env.example` to `.env` if you need local overrides. Docker Compose uses t
 | `HDFS_NAMENODE` | `hdfs://namenode:8020` | HDFS namenode URI |
 | `HIVE_SERVER_HOST` | `hive-server2` | HiveServer2 service hostname |
 | `HIVE_SERVER_PORT` | `10000` | HiveServer2 port |
+| `SPARK_IMAGE` | `apache/spark:3.5.6` | Spark master and worker image |
 | `SPARK_MASTER_URL` | `spark://spark-master:7077` | Spark master URL |
 | `BACKEND_PORT` | `8000` | Host port for FastAPI |
 | `FRONTEND_PORT` | `8088` | Host port for the production dashboard |
@@ -80,7 +81,13 @@ docker compose config
 
 ## Smoke Test
 
-The smoke test expects ADS rows to exist in MySQL. On a fresh stack, initialize and export a batch before running it:
+On a fresh stack, verify that the backend, frontend, and API proxy are reachable even before ADS rows exist:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/scripts/smoke_test.ps1 -BackendBaseUrl http://127.0.0.1:8000 -FrontendBaseUrl http://127.0.0.1:8088 -AllowMissingAds
+```
+
+For a strict end-to-end ADS data check, initialize and export a batch before running the smoke test without `-AllowMissingAds`:
 
 ```powershell
 python crawler/run.py --batch-date 2026-07-01
