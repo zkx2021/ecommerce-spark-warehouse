@@ -179,33 +179,36 @@ function Invoke-LoggedStage {
     [string]$RunDir
   )
 
-  $stdoutPath = Join-Path $RunDir "$Stage.stdout.tmp"
-  $stderrPath = Join-Path $RunDir "$Stage.stderr.tmp"
   $logPath = Join-Path $RunDir "$Stage.log"
   $displayCommand = ((@($Command.FilePath) + $Command.Arguments) -join " ")
 
   "Command: $displayCommand" | Set-Content -LiteralPath $logPath -Encoding UTF8
   "" | Add-Content -LiteralPath $logPath -Encoding UTF8
 
-  $process = Start-Process -FilePath $Command.FilePath `
-    -ArgumentList $Command.Arguments `
-    -WorkingDirectory $ProjectRoot `
-    -NoNewWindow `
-    -Wait `
-    -PassThru `
-    -RedirectStandardOutput $stdoutPath `
-    -RedirectStandardError $stderrPath
-
-  if (Test-Path -LiteralPath $stdoutPath) {
-    Get-Content -LiteralPath $stdoutPath -Raw -ErrorAction SilentlyContinue | Add-Content -LiteralPath $logPath -Encoding UTF8
-    Remove-Item -LiteralPath $stdoutPath -Force
+  Push-Location $ProjectRoot
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = "Continue"
+    $stageOutput = & $Command.FilePath @($Command.Arguments) 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($null -eq $exitCode) {
+      $exitCode = if ($?) { 0 } else { 1 }
+    }
   }
-  if (Test-Path -LiteralPath $stderrPath) {
-    Get-Content -LiteralPath $stderrPath -Raw -ErrorAction SilentlyContinue | Add-Content -LiteralPath $logPath -Encoding UTF8
-    Remove-Item -LiteralPath $stderrPath -Force
+  catch {
+    $stageOutput = $_
+    $exitCode = 1
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+    Pop-Location
   }
 
-  return $process.ExitCode
+  if ($null -ne $stageOutput) {
+    $stageOutput | Out-String | Add-Content -LiteralPath $logPath -Encoding UTF8
+  }
+
+  return $exitCode
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path

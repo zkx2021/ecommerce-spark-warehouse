@@ -95,9 +95,10 @@ def test_offline_batch_runner_captures_output_and_fails_fast():
     script = _read(RUNNER)
 
     assert "invoke-loggedstage" in script
-    assert "start-process" in script
-    assert "redirectstandardoutput" in script
-    assert "redirectstandarderror" in script
+    assert "push-location $projectroot" in script
+    assert '$erroractionpreference = "continue"' in script
+    assert "& $command.filepath @($command.arguments) 2>&1" in script
+    assert "$lastexitcode" in script
     assert 'throw "offline batch failed at stage' in script
 
 
