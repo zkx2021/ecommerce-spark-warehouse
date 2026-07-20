@@ -143,6 +143,31 @@ def _ensure_dwd_schema(spark: Any, config: DwdJobConfig) -> None:
             raise
 
 
+def _target_columns(spark: Any, target_table: str, rows: list[dict[str, Any]]) -> list[str]:
+    row_columns = [column for column in rows[0] if column != "dt"]
+    try:
+        described_rows = spark.sql(f"DESCRIBE {target_table}")
+    except Exception:
+        return row_columns
+    if hasattr(described_rows, "collect"):
+        described_rows = described_rows.collect()
+
+    table_columns = []
+    for described_row in described_rows:
+        data = _row_to_dict(described_row)
+        column_name = data.get("col_name")
+        if not isinstance(column_name, str):
+            continue
+        column_name = column_name.strip()
+        if not column_name or column_name.startswith("#") or column_name == "dt":
+            continue
+        if column_name in row_columns:
+            table_columns.append(column_name)
+
+    missing_columns = [column for column in row_columns if column not in table_columns]
+    return table_columns + missing_columns
+
+
 def _load_ods_rows(spark: Any, config: DwdJobConfig, source: SourceConfig) -> list[dict[str, Any]]:
     table_name = f"{config.ods_database}.{source.ods_table}"
     ods_path = f"hdfs://namenode:8020/warehouse/ecommerce/ods/{source.ods_path_name}/dt={config.batch_date}"
@@ -171,7 +196,7 @@ def _write_dwd_rows(spark: Any, config: DwdJobConfig, source_name: str, source: 
     view_name = f"tmp_{source_name}_dwd_{config.batch_date.replace('-', '')}"
     spark.createDataFrame(rows).createOrReplaceTempView(view_name)
     target_table = f"{config.dwd_database}.{source.dwd_table}"
-    selected_columns = ", ".join(f"`{column}`" for column in rows[0] if column != "dt")
+    selected_columns = ", ".join(f"`{column}`" for column in _target_columns(spark, target_table, rows))
     spark.sql(
         f"INSERT OVERWRITE TABLE {target_table} PARTITION (dt='{config.batch_date}') "
         f"SELECT {selected_columns} FROM {view_name}"
