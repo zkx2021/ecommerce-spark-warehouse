@@ -29,6 +29,7 @@ This project is a complete offline ecommerce data warehouse demo built with Spar
 | Validation | PowerShell scripts, pytest, Node asset checks |
 
 Dashboard: Vue 3 + ECharts dashboard.
+API: FastAPI ADS data service.
 
 ## Current Data Flow
 
