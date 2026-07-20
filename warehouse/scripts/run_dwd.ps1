@@ -57,12 +57,12 @@ try {
   Invoke-Compose -ComposeArgs @("cp", $dwdSql, "hive-server2:$containerSqlPath")
   Invoke-Compose -ComposeArgs @("exec", "-T", "hive-server2", "beeline", "-u", "jdbc:hive2://localhost:10000", "-f", $containerSqlPath)
 
-  Invoke-Compose -ComposeArgs @("exec", "-T", "spark-master", "mkdir", "-p", $containerProjectDir)
+  Invoke-Compose -ComposeArgs @("exec", "-T", "--user", "root", "spark-master", "mkdir", "-p", $containerProjectDir)
   $sparkTmpCreated = $true
   Invoke-Compose -ComposeArgs @("cp", $warehouseDir, "spark-master:$containerProjectDir")
 
-  $sparkCommand = "cd $containerProjectDir && spark-submit --master spark://spark-master:7077 warehouse/spark/jobs/dwd_job.py --batch-date $BatchDate"
-  Invoke-Compose -ComposeArgs @("exec", "-T", "spark-master", "bash", "-lc", $sparkCommand)
+  $sparkCommand = "cd $containerProjectDir && PYTHONPATH=$containerProjectDir /opt/spark/bin/spark-submit --master spark://spark-master:7077 warehouse/spark/jobs/dwd_job.py --batch-date $BatchDate"
+  Invoke-Compose -ComposeArgs @("exec", "-T", "--user", "root", "spark-master", "bash", "-lc", $sparkCommand)
 }
 catch {
   $runFailed = $true
@@ -85,7 +85,7 @@ finally {
 
   if ($sparkTmpCreated) {
     try {
-      Invoke-Compose -ComposeArgs @("exec", "-T", "spark-master", "rm", "-rf", $containerRunDir)
+      Invoke-Compose -ComposeArgs @("exec", "-T", "--user", "root", "spark-master", "rm", "-rf", $containerRunDir)
     }
     catch {
       if ($runFailed) {

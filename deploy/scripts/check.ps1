@@ -72,11 +72,35 @@ function Assert-FileContains {
   }
 }
 
+function Assert-FileContainsCount {
+  param(
+    [string]$Path,
+    [string]$Pattern,
+    [int]$ExpectedCount,
+    [string]$Description
+  )
+
+  $actualCount = @(
+    Select-String -LiteralPath $Path -Pattern $Pattern
+  ).Count
+  if ($actualCount -ne $ExpectedCount) {
+    throw "Missing required configuration: $Description"
+  }
+}
+
 Assert-FileContains "docker-compose.yml" "^\s{2}backend:\s*$" "docker compose backend service"
 Assert-FileContains "docker-compose.yml" "^\s{2}frontend:\s*$" "docker compose frontend service"
+Assert-FileContainsCount "docker-compose.yml" "^\s{4}user: root\s*$" 2 "hadoop services run as root for Docker volume permissions"
 Assert-FileContains ".env.example" "^BACKEND_PORT=8000$" "backend host port"
 Assert-FileContains ".env.example" "^FRONTEND_PORT=8088$" "frontend host port"
 Assert-FileContains ".env.example" "^SPARK_IMAGE=apache/spark:3\.5\.6$" "spark image override"
+Assert-FileContains "warehouse/scripts/run_dwd.ps1" "/opt/spark/bin/spark-submit" "DWD script uses Apache Spark image submit path"
+Assert-FileContains "warehouse/scripts/run_ads.ps1" "/opt/spark/bin/spark-submit" "ADS script uses Apache Spark image submit path"
+Assert-FileContains "warehouse/scripts/run_dwd.ps1" 'PYTHONPATH=\$containerProjectDir' "DWD script sets Spark Python path"
+Assert-FileContains "warehouse/scripts/run_ads.ps1" 'PYTHONPATH=\$containerProjectDir' "ADS script sets Spark Python path"
+Assert-FileContains "warehouse/scripts/run_ads.ps1" "containerBatchExportDir" "ADS script copies only one batch snapshot directory"
+Assert-FileContains "warehouse/spark/jobs/dwd_job.py" "thrift://hive-metastore:9083" "DWD Spark job uses external Hive metastore"
+Assert-FileContains "warehouse/spark/jobs/ads_job.py" "thrift://hive-metastore:9083" "ADS Spark job uses external Hive metastore"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "BackendBaseUrl" "smoke test backend URL parameter"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "FrontendBaseUrl" "smoke test frontend URL parameter"
 

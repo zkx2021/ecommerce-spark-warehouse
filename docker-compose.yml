@@ -4,6 +4,7 @@ services:
   namenode:
     image: apache/hadoop:3.3.6
     container_name: esw-namenode
+    user: root
     command:
       - bash
       - -c
@@ -23,6 +24,7 @@ services:
   datanode:
     image: apache/hadoop:3.3.6
     container_name: esw-datanode
+    user: root
     command: ["hdfs", "datanode"]
     depends_on:
       - namenode

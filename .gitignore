@@ -21,6 +21,7 @@ data/raw/
 data/output/
 data/tmp/
 crawler/data/
+warehouse/data/
 logs/
 *.log
 

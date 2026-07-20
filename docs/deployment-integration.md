@@ -16,6 +16,8 @@ Crawler -> HDFS -> Hive ODS/DWD/DIM/DWS/ADS
         -> FastAPI ADS API -> Vue/ECharts dashboard
 ```
 
+The local Hadoop containers run as `root` so Namenode and Datanode can initialize Docker-managed HDFS data volumes on Docker Desktop.
+
 ## Foundation Check
 
 Run this first after cloning or changing deployment files:
@@ -92,6 +94,9 @@ For a strict end-to-end ADS data check, initialize and export a batch before run
 ```powershell
 python crawler/run.py --batch-date 2026-07-01
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/check_ods_inputs.ps1 -BatchDate 2026-07-01
+docker compose exec -T hive-server2 mkdir -p /tmp/ods-ddl
+docker compose cp warehouse/hive/ods/create_ods_tables.sql hive-server2:/tmp/ods-ddl/create_ods_tables.sql
+docker compose exec -T hive-server2 beeline -u jdbc:hive2://localhost:10000 -f /tmp/ods-ddl/create_ods_tables.sql
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/load_ods.ps1 -BatchDate 2026-07-01
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_dwd.ps1 -BatchDate 2026-07-01
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_ads.ps1 -BatchDate 2026-07-01

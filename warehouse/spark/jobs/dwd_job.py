@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import argparse
 import json
+import os
 import re
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -11,11 +14,24 @@ from warehouse.spark.jobs import dwd_transforms
 BATCH_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ODS_DATABASE = "ecommerce_ods"
 DWD_DATABASE = "ecommerce_dwd"
+FLOAT_FIELDS = {
+    "price",
+    "discount_percentage",
+    "rating",
+    "latitude",
+    "longitude",
+    "unit_price",
+    "line_total",
+    "line_discounted_total",
+    "cart_total",
+    "cart_discounted_total",
+}
 
 
 @dataclass(frozen=True)
 class SourceConfig:
     ods_table: str
+    ods_path_name: str
     dwd_table: str
     transform_name: str
 
@@ -52,6 +68,7 @@ def build_job_config(batch_date: str) -> DwdJobConfig:
                 "products",
                 SourceConfig(
                     ods_table="ods_products",
+                    ods_path_name="products",
                     dwd_table="dwd_product_info",
                     transform_name="transform_products",
                 ),
@@ -60,6 +77,7 @@ def build_job_config(batch_date: str) -> DwdJobConfig:
                 "users",
                 SourceConfig(
                     ods_table="ods_users",
+                    ods_path_name="users",
                     dwd_table="dwd_user_info",
                     transform_name="transform_users",
                 ),
@@ -68,6 +86,7 @@ def build_job_config(batch_date: str) -> DwdJobConfig:
                 "carts",
                 SourceConfig(
                     ods_table="ods_carts",
+                    ods_path_name="carts",
                     dwd_table="dwd_order_cart_detail",
                     transform_name="transform_carts",
                 ),
@@ -85,7 +104,16 @@ def build_job_config(batch_date: str) -> DwdJobConfig:
 def _create_spark_session():
     from pyspark.sql import SparkSession
 
-    return SparkSession.builder.appName("ecommerce-dwd-batch").enableHiveSupport().getOrCreate()
+    return (
+        SparkSession.builder.appName("ecommerce-dwd-batch")
+        .config("hive.metastore.uris", os.getenv("HIVE_METASTORE_URIS", "thrift://hive-metastore:9083"))
+        .config(
+            "spark.sql.warehouse.dir",
+            os.getenv("HIVE_WAREHOUSE_DIR", "hdfs://namenode:8020/user/hive/warehouse"),
+        )
+        .enableHiveSupport()
+        .getOrCreate()
+    )
 
 
 def _row_to_dict(row: Any) -> dict[str, Any]:
@@ -94,18 +122,30 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     return dict(row)
 
 
+def _normalize_dwd_row(row: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(row)
+    for field in FLOAT_FIELDS:
+        value = normalized.get(field)
+        if value is not None:
+            normalized[field] = float(value)
+    return normalized
+
+
 def _load_ods_rows(spark: Any, config: DwdJobConfig, source: SourceConfig) -> list[dict[str, Any]]:
     table_name = f"{config.ods_database}.{source.ods_table}"
+    ods_path = f"hdfs://namenode:8020/warehouse/ecommerce/ods/{source.ods_path_name}/dt={config.batch_date}"
     try:
         rows = (
-            spark.table(table_name)
-            .where(f"dt = '{config.batch_date}' AND batch_date = '{config.batch_date}'")
+            spark.read.json(ods_path)
+            .where(f"batch_date = '{config.batch_date}'")
             .collect()
         )
     except Exception as exc:
-        raise DwdBatchError(f"Failed to read ODS table {table_name}: {exc}") from exc
+        raise DwdBatchError(f"Failed to read ODS path for {table_name}: {exc}") from exc
 
     records = [_row_to_dict(row) for row in rows]
+    for record in records:
+        record.setdefault("dt", config.batch_date)
     if not records:
         raise DwdBatchError(f"Empty ODS partition for {table_name} dt={config.batch_date}")
     return records
@@ -115,6 +155,7 @@ def _write_dwd_rows(spark: Any, config: DwdJobConfig, source_name: str, source: 
     if not rows:
         raise DwdBatchError(f"No valid DWD rows for source {source_name} dt={config.batch_date}")
 
+    rows = [_normalize_dwd_row(row) for row in rows]
     view_name = f"tmp_{source_name}_dwd_{config.batch_date.replace('-', '')}"
     spark.createDataFrame(rows).createOrReplaceTempView(view_name)
     target_table = f"{config.dwd_database}.{source.dwd_table}"
