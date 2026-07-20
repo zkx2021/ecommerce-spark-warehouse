@@ -199,6 +199,12 @@ assert.match(appSource, /formatProfileAxisLabel/)
 assert.match(appSource, /interval:\s*0/)
 assert.match(appSource, /电商数据经营看板/)
 assert.doesNotMatch(appSource, /Spark \+ HDFS \+ Hive/)
+assert.match(appSource, /dashboard-column--left/)
+assert.match(appSource, /dashboard-column--right/)
+assert.match(appSource, /categoryShareOption" height="340px"/)
+assert.match(appSource, /userProfileOption" height="330px"/)
+assert.match(appSource, /productRankOption" height="340px"/)
+assert.match(appSource, /productRankLabelWidth = 220/)
 for (const pattern of [
   /catch/,
   /finally/,
@@ -231,6 +237,9 @@ for (const token of [
 
 assert.match(cssSource, /repeat\(4,\s*minmax\(0,\s*1fr\)\)/)
 assert.match(cssSource, /repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
+assert.match(cssSource, /grid-template-areas:\s*"left right"\s*"trend trend"/)
+assert.match(cssSource, /dashboard-column--left/)
+assert.match(cssSource, /dashboard-column--right/)
 assert.match(cssSource, /flex-wrap:\s*wrap/)
 assert.match(cssSource, /overflow-wrap:\s*anywhere/)
 assert.doesNotMatch(cssSource, /radial-gradient/)

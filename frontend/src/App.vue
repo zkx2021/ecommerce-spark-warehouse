@@ -33,25 +33,25 @@
     </section>
 
     <section class="dashboard-grid" aria-label="经营分析图表">
-      <div class="dashboard-column dashboard-column--side">
+      <div class="dashboard-column dashboard-column--side dashboard-column--left">
         <DashboardPanel title="品类销售占比" meta="按销售额">
-          <BaseChart :option="categoryShareOption" height="250px" />
+          <BaseChart :option="categoryShareOption" height="340px" />
         </DashboardPanel>
         <DashboardPanel title="用户画像" meta="人群维度">
-          <BaseChart :option="userProfileOption" height="250px" />
+          <BaseChart :option="userProfileOption" height="330px" />
         </DashboardPanel>
       </div>
 
       <DashboardPanel title="销售趋势" meta="近 7 个周期" class="dashboard-panel--hero">
-        <BaseChart :option="trendOption" height="560px" />
+        <BaseChart :option="trendOption" height="460px" />
       </DashboardPanel>
 
-      <div class="dashboard-column dashboard-column--side">
+      <div class="dashboard-column dashboard-column--side dashboard-column--right">
         <DashboardPanel title="商品销售排行" meta="TOP 5">
-          <BaseChart :option="productRankOption" height="250px" />
+          <BaseChart :option="productRankOption" height="340px" />
         </DashboardPanel>
         <DashboardPanel title="转化漏斗" meta="曝光到支付">
-          <BaseChart :option="funnelOption" height="250px" />
+          <BaseChart :option="funnelOption" height="330px" />
         </DashboardPanel>
       </div>
     </section>
@@ -223,7 +223,7 @@ const trendOption = computed(() => {
 
 const productRankOption = computed(() => {
   const rows = [...overview.value.product_rank].sort((a, b) => a.rank_no - b.rank_no)
-  const productRankLabelWidth = 148
+  const productRankLabelWidth = 220
   return {
     color: ['#60a5fa'],
     tooltip: {
@@ -239,7 +239,7 @@ const productRankOption = computed(() => {
         ].join('<br/>')
       }
     },
-    grid: { left: 8, right: 20, top: 18, bottom: 20, containLabel: true },
+    grid: { left: 10, right: 28, top: 18, bottom: 24, containLabel: true },
     xAxis: {
       type: 'value',
       ...baseAxis,
@@ -255,7 +255,7 @@ const productRankOption = computed(() => {
         width: productRankLabelWidth,
         overflow: 'break',
         lineHeight: 16,
-        margin: 10
+        margin: 12
       }
     },
     series: [
@@ -283,14 +283,15 @@ const categoryShareOption = computed(() => ({
   },
   legend: {
     bottom: 0,
+    type: 'scroll',
     textStyle: { color: chartTextColor }
   },
   series: [
     {
       name: '品类销售占比',
       type: 'pie',
-      radius: ['46%', '70%'],
-      center: ['50%', '44%'],
+      radius: ['42%', '66%'],
+      center: ['50%', '42%'],
       avoidLabelOverlap: true,
       label: {
         color: chartTextColor,
@@ -320,7 +321,7 @@ const userProfileOption = computed(() => {
       top: 0,
       textStyle: { color: chartTextColor }
     },
-    grid: { left: 42, right: 18, top: 42, bottom: 48, containLabel: true },
+    grid: { left: 42, right: 18, top: 42, bottom: 66, containLabel: true },
     xAxis: {
       type: 'category',
       data: rows.map((item) => `${item.dimension_type}:${item.dimension_value}`),
@@ -328,10 +329,10 @@ const userProfileOption = computed(() => {
       axisLabel: {
         color: mutedTextColor,
         interval: 0,
-        width: 96,
+        width: 124,
         overflow: 'break',
         lineHeight: 16,
-        margin: 12,
+        margin: 14,
         formatter: formatProfileAxisLabel
       }
     },
