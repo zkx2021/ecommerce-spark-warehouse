@@ -157,6 +157,10 @@ def test_run_reads_ods_transforms_and_overwrites_dwd_partitions():
         "INSERT OVERWRITE TABLE ecommerce_dwd.dwd_order_cart_detail PARTITION (dt='2026-07-01')" in statement
         for statement in spark.sql_calls
     )
+    assert any(
+        "ALTER TABLE ecommerce_dwd.dwd_order_cart_detail ADD COLUMNS (category_hint STRING)" in statement
+        for statement in spark.sql_calls
+    )
 
 
 def test_run_fails_empty_ods_partition():

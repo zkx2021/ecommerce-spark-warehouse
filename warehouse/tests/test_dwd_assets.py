@@ -72,6 +72,7 @@ def test_dwd_sql_defines_cart_detail_columns():
         "quantity int",
         "line_total decimal(18,2)",
         "line_discounted_total decimal(18,2)",
+        "category_hint string",
         "cart_total decimal(18,2)",
         "cart_discounted_total decimal(18,2)",
         "total_products int",

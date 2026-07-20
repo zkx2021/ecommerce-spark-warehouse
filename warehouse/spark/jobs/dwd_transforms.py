@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -173,6 +174,16 @@ def _valid_cart_line(product: Any) -> bool:
     )
 
 
+def _category_hint_from_thumbnail(thumbnail: Any) -> str | None:
+    if not isinstance(thumbnail, str):
+        return None
+    match = re.search(r"/product-images/([^/]+)/", thumbnail)
+    if match is None:
+        return None
+    category = match.group(1).strip()
+    return category or None
+
+
 def _is_optional_non_negative_number(value: Any) -> bool:
     return value is None or _is_non_negative_number(value)
 
@@ -237,6 +248,7 @@ def transform_carts(rows: Iterable[dict[str, Any]], *, batch_date: str) -> Trans
                     "line_total": product.get("total"),
                     "discount_percentage": product.get("discountPercentage"),
                     "line_discounted_total": product.get("discountedTotal"),
+                    "category_hint": _category_hint_from_thumbnail(product.get("thumbnail")),
                     "cart_total": payload.get("total"),
                     "cart_discounted_total": payload.get("discountedTotal"),
                     "total_products": payload.get("totalProducts"),

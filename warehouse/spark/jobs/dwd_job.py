@@ -131,6 +131,18 @@ def _normalize_dwd_row(row: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _ensure_dwd_schema(spark: Any, config: DwdJobConfig) -> None:
+    try:
+        spark.sql(
+            f"ALTER TABLE {config.dwd_database}.dwd_order_cart_detail "
+            "ADD COLUMNS (category_hint STRING)"
+        )
+    except Exception as exc:
+        message = str(exc).lower()
+        if "already exists" not in message and "duplicate" not in message:
+            raise
+
+
 def _load_ods_rows(spark: Any, config: DwdJobConfig, source: SourceConfig) -> list[dict[str, Any]]:
     table_name = f"{config.ods_database}.{source.ods_table}"
     ods_path = f"hdfs://namenode:8020/warehouse/ecommerce/ods/{source.ods_path_name}/dt={config.batch_date}"
@@ -172,6 +184,7 @@ def run(config: DwdJobConfig, spark: Any | None = None) -> dict[str, object]:
     summary: dict[str, object] = {"status": "ok", "batch_date": config.batch_date}
 
     try:
+        _ensure_dwd_schema(active_spark, config)
         for source_name, source in config.sources.items():
             transform = getattr(dwd_transforms, source.transform_name)
             ods_rows = _load_ods_rows(active_spark, config, source)

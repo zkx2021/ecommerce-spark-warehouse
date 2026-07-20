@@ -52,6 +52,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS dwd_order_cart_detail (
   line_total DECIMAL(18,2),
   discount_percentage DECIMAL(10,2),
   line_discounted_total DECIMAL(18,2),
+  category_hint STRING,
   cart_total DECIMAL(18,2),
   cart_discounted_total DECIMAL(18,2),
   total_products INT,

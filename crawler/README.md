@@ -6,7 +6,7 @@ The crawler collects ecommerce data needed by the offline data warehouse.
 
 By default, the crawler reads from DummyJSON:
 
-- Products: `https://dummyjson.com/products`
+- Products: `https://dummyjson.com/products?limit=200`
 - Carts: `https://dummyjson.com/carts`
 - Users: `https://dummyjson.com/users`
 

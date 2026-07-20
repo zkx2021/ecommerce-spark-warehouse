@@ -50,7 +50,7 @@ def test_load_sources_default_path_is_not_cwd_dependent(monkeypatch):
     assert sources == [
         Source(
             name="products",
-            url="https://dummyjson.com/products",
+            url="https://dummyjson.com/products?limit=200",
             entity="product",
         ),
         Source(

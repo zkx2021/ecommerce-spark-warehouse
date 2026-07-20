@@ -116,11 +116,11 @@ def test_dws_product_daily_coalesces_missing_product_category():
     statement = ads_sql.render_statement("dws_product_daily", "2026-07-01").lower()
     normalized_sql = re.sub(r"\s+", " ", statement)
 
-    assert "coalesce(product.category, 'unknown') as category" in normalized_sql
+    assert "coalesce(product.category, detail.category_hint, 'unknown') as category" in normalized_sql
     assert (
         "group by detail.product_id, "
         "coalesce(product.product_name, detail.product_name), "
-        "coalesce(product.category, 'unknown'), product.brand"
+        "coalesce(product.category, detail.category_hint, 'unknown'), product.brand"
     ) in normalized_sql
 
 
