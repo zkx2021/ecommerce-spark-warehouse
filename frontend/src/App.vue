@@ -368,17 +368,21 @@ const funnelOption = computed(() => {
       {
         name: '转化漏斗',
         type: 'funnel',
-        left: '8%',
+        left: '16%',
         top: 12,
         bottom: 8,
-        width: '84%',
-        minSize: '28%',
-        maxSize: '94%',
+        width: '62%',
+        minSize: '22%',
+        maxSize: '78%',
         sort: 'none',
         gap: 4,
         label: {
           color: chartTextColor,
           formatter: ({ data }) => `${data.name} ${formatPercent(data.conversionRate)}`
+        },
+        labelLine: {
+          length: 12,
+          length2: 8
         },
         data: rows.map((item) => ({
           name: item.stage_name,

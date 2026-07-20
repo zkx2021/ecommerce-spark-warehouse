@@ -205,6 +205,10 @@ assert.match(appSource, /categoryShareOption" height="340px"/)
 assert.match(appSource, /userProfileOption" height="330px"/)
 assert.match(appSource, /productRankOption" height="340px"/)
 assert.match(appSource, /productRankLabelWidth = 220/)
+assert.match(appSource, /left:\s*'16%'/)
+assert.match(appSource, /width:\s*'62%'/)
+assert.match(appSource, /maxSize:\s*'78%'/)
+assert.match(appSource, /labelLine:/)
 for (const pattern of [
   /catch/,
   /finally/,
