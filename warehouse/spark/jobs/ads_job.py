@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -50,7 +53,16 @@ def build_job_config(batch_date: str, export_root: str | Path = "warehouse/data/
 def _create_spark_session():
     from pyspark.sql import SparkSession
 
-    return SparkSession.builder.appName("ecommerce-ads-batch").enableHiveSupport().getOrCreate()
+    return (
+        SparkSession.builder.appName("ecommerce-ads-batch")
+        .config("hive.metastore.uris", os.getenv("HIVE_METASTORE_URIS", "thrift://hive-metastore:9083"))
+        .config(
+            "spark.sql.warehouse.dir",
+            os.getenv("HIVE_WAREHOUSE_DIR", "hdfs://namenode:8020/user/hive/warehouse"),
+        )
+        .enableHiveSupport()
+        .getOrCreate()
+    )
 
 
 def _row_to_dict(row: Any) -> dict[str, Any]:

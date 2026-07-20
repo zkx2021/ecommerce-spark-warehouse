@@ -51,7 +51,9 @@ def _compose_env_value(name: str) -> str:
     compose = _read(DOCKER_COMPOSE)
     match = re.search(rf"^\s*{re.escape(name.lower())}:\s*([^\s#]+)", compose, flags=re.MULTILINE)
     assert match is not None, f"missing Compose environment value for {name}"
-    return match.group(1)
+    value = match.group(1)
+    default_match = re.fullmatch(r"\$\{[^:}]+:-([^}]+)\}", value)
+    return default_match.group(1) if default_match else value
 
 
 def test_dim_sql_creates_database_tables_and_partitions():
@@ -223,9 +225,10 @@ def test_run_ads_script_copies_container_exports_to_host_before_cleanup():
 
     assert "$hostbatchexportdir" in script
     assert "$containerexportroot" in script
+    assert "$containerbatchexportdir" in script
     copy_match = re.search(
         r'invoke-compose\s+-composeargs\s+@\([^)]*"cp"[^)]*'
-        r'"spark-master:\$containerexportroot"[^)]*\$hostbatchexportdir[^)]*\)',
+        r'"spark-master:\$containerbatchexportdir"[^)]*\$hostbatchexportdir[^)]*\)',
         script,
         flags=re.DOTALL,
     )
@@ -293,5 +296,5 @@ def test_readmes_document_ads_batch_flow():
     assert "ods -> dwd -> dim -> dws -> ads -> mysql" in warehouse_readme
     assert "warehouse/data/ads/<batch-date>/" in warehouse_readme
     assert "dim, dws, ads" in root_readme
-    assert "planned api" in root_readme
-    assert "planned vue" in root_readme
+    assert "fastapi ads api" in root_readme
+    assert "vue/echarts dashboard" in root_readme
