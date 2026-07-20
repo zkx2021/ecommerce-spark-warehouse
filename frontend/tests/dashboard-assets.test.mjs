@@ -189,6 +189,9 @@ for (const token of [
 }
 assert.match(appSource, /refreshRequestId/)
 assert.match(appSource, /requestId !== refreshRequestId/)
+assert.match(appSource, /productRankLabelWidth/)
+assert.match(appSource, /containLabel:\s*true/)
+assert.match(appSource, /overflow:\s*'break'/)
 for (const pattern of [
   /catch/,
   /finally/,

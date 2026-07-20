@@ -223,10 +223,11 @@ const trendOption = computed(() => {
 
 const productRankOption = computed(() => {
   const rows = [...overview.value.product_rank].sort((a, b) => a.rank_no - b.rank_no)
+  const productRankLabelWidth = 148
   return {
     color: ['#60a5fa'],
     tooltip: { trigger: 'axis' },
-    grid: { left: 92, right: 20, top: 18, bottom: 20 },
+    grid: { left: 8, right: 20, top: 18, bottom: 20, containLabel: true },
     xAxis: {
       type: 'value',
       ...baseAxis,
@@ -236,7 +237,14 @@ const productRankOption = computed(() => {
       type: 'category',
       inverse: true,
       data: rows.map((item) => item.product_name),
-      ...baseAxis
+      ...baseAxis,
+      axisLabel: {
+        color: mutedTextColor,
+        width: productRankLabelWidth,
+        overflow: 'break',
+        lineHeight: 16,
+        margin: 10
+      }
     },
     series: [
       {
