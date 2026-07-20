@@ -23,6 +23,7 @@ data/tmp/
 crawler/data/
 warehouse/data/
 logs/
+logs/offline-batch/
 *.log
 
 # Docker and local runtime volumes

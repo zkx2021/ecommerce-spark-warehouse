@@ -12,6 +12,35 @@ This module owns HDFS directory planning, Hive warehouse SQL, Spark jobs, and AD
 - `spark/jobs`: Spark SQL and PySpark offline jobs.
 - `spark/submit`: Spark submit scripts.
 
+## One-Command Offline Batch
+
+After the Docker Compose stack is running, run the local offline chain for one batch date:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01
+```
+
+The runner executes:
+
+```text
+crawler -> ods_check -> ods_ddl -> ods_load -> dwd -> ads -> mysql_export -> smoke_test
+```
+
+Resume from a failed stage after fixing the local issue:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01 -StartFrom dwd
+```
+
+Reuse existing crawler output and skip the final strict smoke test:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01 -SkipStages crawler,smoke_test
+```
+
+Each run writes logs and `run-summary.json` under `logs/offline-batch/<batch-date>/<run-id>/`.
+This is local orchestration for development and demos, not a production scheduler.
+
 ## ODS Batch Flow
 
 Run the crawler for the batch date:

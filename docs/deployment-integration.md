@@ -89,7 +89,25 @@ On a fresh stack, verify that the backend, frontend, and API proxy are reachable
 powershell -ExecutionPolicy Bypass -File deploy/scripts/smoke_test.ps1 -BackendBaseUrl http://127.0.0.1:8000 -FrontendBaseUrl http://127.0.0.1:8088 -AllowMissingAds
 ```
 
-For a strict end-to-end ADS data check, initialize and export a batch before running the smoke test without `-AllowMissingAds`:
+For a strict end-to-end ADS data check, run the one-command offline batch after the Docker Compose stack is running:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01
+```
+
+If crawler data already exists and you only want to refresh warehouse and dashboard-facing data:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01 -SkipStages crawler
+```
+
+If a downstream stage fails, inspect `logs/offline-batch/<batch-date>/<run-id>/<stage>.log`, fix the local issue, then resume:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01 -StartFrom dwd
+```
+
+The expanded manual command chain remains useful for troubleshooting individual stages:
 
 ```powershell
 python crawler/run.py --batch-date 2026-07-01
