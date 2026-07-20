@@ -2,7 +2,7 @@
   <main class="dashboard-shell">
     <header class="dashboard-header">
       <div>
-        <p class="dashboard-eyebrow">Spark + HDFS + Hive 离线数仓</p>
+        <p class="dashboard-eyebrow">电商数据经营看板</p>
         <h1>电商经营分析大屏</h1>
       </div>
 
@@ -226,7 +226,19 @@ const productRankOption = computed(() => {
   const productRankLabelWidth = 148
   return {
     color: ['#60a5fa'],
-    tooltip: { trigger: 'axis' },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const point = Array.isArray(params) ? params[0] : params
+        const row = rows[point.dataIndex]
+        return [
+          row.product_name,
+          `销售额：${formatMoney(row.sales_amount)}`,
+          `销量：${formatCount(row.sales_quantity)}`
+        ].join('<br/>')
+      }
+    },
     grid: { left: 8, right: 20, top: 18, bottom: 20, containLabel: true },
     xAxis: {
       type: 'value',
@@ -293,6 +305,12 @@ const categoryShareOption = computed(() => ({
   ]
 }))
 
+function formatProfileAxisLabel(value) {
+  const separatorIndex = value.indexOf(':')
+  if (separatorIndex < 0) return value
+  return `${value.slice(0, separatorIndex)}\n${value.slice(separatorIndex + 1)}`
+}
+
 const userProfileOption = computed(() => {
   const rows = overview.value.user_profile
   return {
@@ -302,11 +320,20 @@ const userProfileOption = computed(() => {
       top: 0,
       textStyle: { color: chartTextColor }
     },
-    grid: { left: 42, right: 18, top: 42, bottom: 30, containLabel: true },
+    grid: { left: 42, right: 18, top: 42, bottom: 48, containLabel: true },
     xAxis: {
       type: 'category',
       data: rows.map((item) => `${item.dimension_type}:${item.dimension_value}`),
-      ...baseAxis
+      ...baseAxis,
+      axisLabel: {
+        color: mutedTextColor,
+        interval: 0,
+        width: 96,
+        overflow: 'break',
+        lineHeight: 16,
+        margin: 12,
+        formatter: formatProfileAxisLabel
+      }
     },
     yAxis: {
       type: 'value',

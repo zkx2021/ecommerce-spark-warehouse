@@ -192,6 +192,13 @@ assert.match(appSource, /requestId !== refreshRequestId/)
 assert.match(appSource, /productRankLabelWidth/)
 assert.match(appSource, /containLabel:\s*true/)
 assert.match(appSource, /overflow:\s*'break'/)
+assert.match(appSource, /formatter: \(params\) =>/)
+assert.match(appSource, /销售额：/)
+assert.match(appSource, /销量：/)
+assert.match(appSource, /formatProfileAxisLabel/)
+assert.match(appSource, /interval:\s*0/)
+assert.match(appSource, /电商数据经营看板/)
+assert.doesNotMatch(appSource, /Spark \+ HDFS \+ Hive/)
 for (const pattern of [
   /catch/,
   /finally/,
