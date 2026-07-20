@@ -24,6 +24,7 @@ assert.equal(packageJson.scripts['test:assets'], 'node tests/dashboard-assets.te
 assertFile('frontend/src/data/mockAds.js')
 assertFile('frontend/src/services/adsApi.js')
 assertFile('frontend/src/utils/formatters.js')
+assertFile('frontend/src/utils/categoryShare.js')
 
 const mockAds = read('frontend/src/data/mockAds.js')
 for (const section of ['kpi', 'trend', 'product_rank', 'category_share', 'user_profile', 'funnel']) {
@@ -68,6 +69,7 @@ const {
   formatPercent,
   formatDateTime
 } = await import('../src/utils/formatters.js')
+const { buildCategoryShareSlices } = await import('../src/utils/categoryShare.js')
 
 for (const section of ['trend', 'product_rank', 'category_share', 'user_profile', 'funnel']) {
   assert.ok(Array.isArray(mockAdsOverview[section]), `${section} should be an array`)
@@ -141,6 +143,23 @@ assert.equal(formatPercent(0.374), '37.4%')
 const formattedDateTime = formatDateTime(new Date('2026-07-01T12:34:56+08:00'))
 assert.equal(typeof formattedDateTime, 'string')
 assert.ok(formattedDateTime.length > 0)
+
+const categorySlices = buildCategoryShareSlices([
+  { category: 'vehicle', sales_amount: 276000, sales_quantity: 10, sales_share: 0.42 },
+  { category: 'mens-watches', sales_amount: 127000, sales_quantity: 11, sales_share: 0.19 },
+  { category: 'motorcycle', sales_amount: 110000, sales_quantity: 15, sales_share: 0.17 },
+  { category: 'womens-watches', sales_amount: 95000, sales_quantity: 15, sales_share: 0.15 },
+  { category: 'smartphones', sales_amount: 17000, sales_quantity: 36, sales_share: 0.03 },
+  { category: 'furniture', sales_amount: 7000, sales_quantity: 7, sales_share: 0.01 },
+  { category: 'laptops', sales_amount: 6000, sales_quantity: 6, sales_share: 0.01 },
+  { category: 'groceries', sales_amount: 2000, sales_quantity: 61, sales_share: 0.01 }
+])
+assert.equal(categorySlices.length, 7)
+assert.equal(categorySlices[0].category, 'vehicle')
+assert.equal(categorySlices[6].category, '其他')
+assert.equal(categorySlices[6].sales_amount, 8000)
+assert.equal(categorySlices[6].sales_quantity, 67)
+assert.equal(categorySlices[6].sales_share, 0.02)
 
 for (const file of [
   'frontend/src/components/BaseChart.vue',
@@ -270,6 +289,7 @@ for (const file of [
   'frontend/src/data/mockAds.js',
   'frontend/src/services/adsApi.js',
   'frontend/src/utils/formatters.js',
+  'frontend/src/utils/categoryShare.js',
   'frontend/src/styles/dashboard.css',
   'frontend/tests/dashboard-assets.test.mjs'
 ]) {

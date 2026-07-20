@@ -66,6 +66,7 @@ import KpiCard from './components/KpiCard.vue'
 import StatusBadge from './components/StatusBadge.vue'
 import { mockAdsOverview } from './data/mockAds'
 import { fetchAdsOverview } from './services/adsApi'
+import { buildCategoryShareSlices } from './utils/categoryShare'
 import { formatCount, formatDateTime, formatMoney, formatPercent } from './utils/formatters'
 
 const selectedDate = ref('')
@@ -275,36 +276,39 @@ const productRankOption = computed(() => {
   }
 })
 
-const categoryShareOption = computed(() => ({
-  color: palette,
-  tooltip: {
-    trigger: 'item',
-    formatter: ({ data }) => `${data.name}<br/>销售额：${formatMoney(data.value)}<br/>占比：${formatPercent(data.salesShare)}`
-  },
-  legend: {
-    bottom: 0,
-    type: 'scroll',
-    textStyle: { color: chartTextColor }
-  },
-  series: [
-    {
-      name: '品类销售占比',
-      type: 'pie',
-      radius: ['42%', '66%'],
-      center: ['50%', '42%'],
-      avoidLabelOverlap: true,
-      label: {
-        color: chartTextColor,
-        formatter: ({ data }) => `${data.name}\n${formatPercent(data.salesShare)}`
-      },
-      data: overview.value.category_share.map((item) => ({
-        name: item.category,
-        value: item.sales_amount,
-        salesShare: item.sales_share
-      }))
-    }
-  ]
-}))
+const categoryShareOption = computed(() => {
+  const rows = buildCategoryShareSlices(overview.value.category_share)
+  return {
+    color: palette,
+    tooltip: {
+      trigger: 'item',
+      formatter: ({ data }) => `${data.name}<br/>销售额：${formatMoney(data.value)}<br/>占比：${formatPercent(data.salesShare)}`
+    },
+    legend: {
+      bottom: 0,
+      type: 'scroll',
+      textStyle: { color: chartTextColor }
+    },
+    series: [
+      {
+        name: '品类销售占比',
+        type: 'pie',
+        radius: ['42%', '66%'],
+        center: ['50%', '42%'],
+        avoidLabelOverlap: true,
+        label: {
+          color: chartTextColor,
+          formatter: ({ data }) => `${data.name}\n${formatPercent(data.salesShare)}`
+        },
+        data: rows.map((item) => ({
+          name: item.category,
+          value: item.sales_amount,
+          salesShare: item.sales_share
+        }))
+      }
+    ]
+  }
+})
 
 function formatProfileAxisLabel(value) {
   const separatorIndex = value.indexOf(':')
