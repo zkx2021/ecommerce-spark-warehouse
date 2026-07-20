@@ -37,7 +37,7 @@ def test_offline_batch_runner_exists_and_exposes_parameters():
 
 def test_offline_batch_runner_declares_expected_stage_order():
     script = _read(RUNNER)
-    stage_match = re.search(r"\\$stageorder\\s*=\\s*@\\((.*?)\\)", script, flags=re.DOTALL)
+    stage_match = re.search(r"\$stageorder\s*=\s*@\((.*?)\)", script, flags=re.DOTALL)
     assert stage_match is not None
 
     stages = re.findall(r"'([^']+)'", stage_match.group(1))
