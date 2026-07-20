@@ -5,6 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = PROJECT_ROOT / "warehouse" / "scripts" / "run_quality_check.ps1"
 CHECKER = PROJECT_ROOT / "warehouse" / "scripts" / "quality_check.py"
 FOUNDATION_CHECK = PROJECT_ROOT / "deploy" / "scripts" / "check.ps1"
+RUNNER = PROJECT_ROOT / "warehouse" / "scripts" / "run_offline_batch.ps1"
 
 
 def _read(path: Path) -> str:
@@ -40,3 +41,11 @@ def test_quality_checker_mentions_validation_not_cleaning():
 
     assert "quality" in checker
     assert "clean" not in checker
+
+
+def test_offline_batch_runner_places_quality_check_before_smoke_test():
+    runner = _read(RUNNER).replace("\\", "/")
+
+    assert "'mysql_export', 'quality_check', 'smoke_test'" in runner
+    assert "quality_check.log" in runner
+    assert "warehouse/scripts/run_quality_check.ps1" in runner

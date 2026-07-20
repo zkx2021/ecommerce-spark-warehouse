@@ -17,6 +17,7 @@ EXPECTED_STAGES = [
     "dwd",
     "ads",
     "mysql_export",
+    "quality_check",
     "smoke_test",
 ]
 
@@ -55,6 +56,7 @@ def test_offline_batch_runner_references_existing_pipeline_scripts():
         "warehouse/scripts/run_dwd.ps1",
         "warehouse/scripts/run_ads.ps1",
         "warehouse/scripts/export_ads_mysql.ps1",
+        "warehouse/scripts/run_quality_check.ps1",
         "deploy/scripts/smoke_test.ps1",
     ):
         assert expected in script
