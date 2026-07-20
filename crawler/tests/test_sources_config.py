@@ -18,3 +18,12 @@ def test_each_source_has_url_and_entity():
     for source in data["sources"]:
         assert source["url"].startswith("https://dummyjson.com/")
         assert source["entity"] in {"product", "order", "user"}
+
+
+def test_products_source_fetches_enough_rows_to_cover_cart_product_ids():
+    config_path = Path(__file__).resolve().parents[1] / "config" / "sources.json"
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+
+    products_source = next(source for source in data["sources"] if source["name"] == "products")
+
+    assert products_source["url"] == "https://dummyjson.com/products?limit=200"

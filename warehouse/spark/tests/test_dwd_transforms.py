@@ -190,6 +190,7 @@ def test_transform_carts_explodes_product_lines():
                             "total": 40.0,
                             "discountPercentage": 5.0,
                             "discountedTotal": 38.0,
+                            "thumbnail": "https://cdn.dummyjson.com/product-images/mobile-accessories/phone-case/thumbnail.webp",
                         },
                         {
                             "id": 2,
@@ -219,6 +220,7 @@ def test_transform_carts_explodes_product_lines():
             "line_total": 40.0,
             "discount_percentage": 5.0,
             "line_discounted_total": 38.0,
+            "category_hint": "mobile-accessories",
             "cart_total": 250.5,
             "cart_discounted_total": 225.4,
             "total_products": 2,
@@ -237,6 +239,7 @@ def test_transform_carts_explodes_product_lines():
             "line_total": 30.0,
             "discount_percentage": 10.0,
             "line_discounted_total": 27.0,
+            "category_hint": None,
             "cart_total": 250.5,
             "cart_discounted_total": 225.4,
             "total_products": 2,
@@ -246,6 +249,46 @@ def test_transform_carts_explodes_product_lines():
             "dt": "2026-07-01",
         },
     ]
+
+
+@pytest.mark.parametrize(
+    ("thumbnail", "expected"),
+    [
+        ("https://cdn.dummyjson.com/product-images/smartphones/iphone-13-pro/thumbnail.webp", "smartphones"),
+        ("https://cdn.dummyjson.com/product-images/mens-watches/rolex-datejust/thumbnail.webp", "mens-watches"),
+        ("https://example.test/no-category.png", None),
+        (None, None),
+    ],
+)
+def test_transform_carts_derives_category_hint_from_dummyjson_thumbnail(thumbnail, expected):
+    product = {
+        "id": 9,
+        "title": "Catalog item",
+        "price": 10.0,
+        "quantity": 1,
+        "total": 10.0,
+        "discountedTotal": 9.0,
+    }
+    if thumbnail is not None:
+        product["thumbnail"] = thumbnail
+
+    result = transform_carts(
+        [
+            _ods_row(
+                "carts",
+                "2026-07-01",
+                {
+                    "id": 101,
+                    "userId": 7,
+                    "products": [product],
+                },
+            )
+        ],
+        batch_date="2026-07-01",
+    )
+
+    assert result.invalid_count == 0
+    assert result.rows[0]["category_hint"] == expected
 
 
 def test_transform_carts_rejects_invalid_contract_and_line_rows():

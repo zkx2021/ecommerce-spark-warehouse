@@ -111,7 +111,7 @@ SELECT
     '{batch_date}' AS date_id,
     detail.product_id,
     COALESCE(product.product_name, detail.product_name) AS product_name,
-    COALESCE(product.category, 'unknown') AS category,
+    COALESCE(product.category, detail.category_hint, 'unknown') AS category,
     product.brand,
     SUM(detail.quantity) AS sales_quantity,
     CAST(SUM(detail.line_discounted_total) AS DECIMAL(18,2)) AS sales_amount,
@@ -121,7 +121,7 @@ LEFT JOIN ecommerce_dim.dim_product product
     ON detail.product_id = product.product_id
    AND product.dt = '{batch_date}'
 WHERE detail.dt = '{batch_date}'
-GROUP BY detail.product_id, COALESCE(product.product_name, detail.product_name), COALESCE(product.category, 'unknown'), product.brand
+GROUP BY detail.product_id, COALESCE(product.product_name, detail.product_name), COALESCE(product.category, detail.category_hint, 'unknown'), product.brand
 """,
     "dws_category_daily": """
 INSERT OVERWRITE TABLE ecommerce_dws.dws_category_daily PARTITION (dt='{batch_date}')
