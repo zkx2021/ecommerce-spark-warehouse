@@ -52,6 +52,14 @@ class FakeWriterDataFrame:
         self.spark.views[name] = self.rows
 
 
+class FakeDescribeDataFrame:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def collect(self):
+        return self.rows
+
+
 class FakeSpark:
     def __init__(self, path_rows):
         self.path_rows = path_rows
@@ -68,6 +76,28 @@ class FakeSpark:
 
     def sql(self, statement):
         self.sql_calls.append(statement)
+        normalized = " ".join(statement.split()).lower()
+        if normalized.startswith("describe "):
+            return FakeDescribeDataFrame([
+                FakeRow({"col_name": "cart_id"}),
+                FakeRow({"col_name": "user_id"}),
+                FakeRow({"col_name": "product_id"}),
+                FakeRow({"col_name": "product_name"}),
+                FakeRow({"col_name": "unit_price"}),
+                FakeRow({"col_name": "quantity"}),
+                FakeRow({"col_name": "line_total"}),
+                FakeRow({"col_name": "discount_percentage"}),
+                FakeRow({"col_name": "line_discounted_total"}),
+                FakeRow({"col_name": "cart_total"}),
+                FakeRow({"col_name": "cart_discounted_total"}),
+                FakeRow({"col_name": "total_products"}),
+                FakeRow({"col_name": "total_quantity"}),
+                FakeRow({"col_name": "source"}),
+                FakeRow({"col_name": "batch_date"}),
+                FakeRow({"col_name": "category_hint"}),
+                FakeRow({"col_name": "dt"}),
+                FakeRow({"col_name": "# Partition Information"}),
+            ])
 
 
 def test_parse_args_accepts_batch_date():
@@ -159,6 +189,13 @@ def test_run_reads_ods_transforms_and_overwrites_dwd_partitions():
     )
     assert any(
         "ALTER TABLE ecommerce_dwd.dwd_order_cart_detail ADD COLUMNS (category_hint STRING)" in statement
+        for statement in spark.sql_calls
+    )
+    assert any(
+        "SELECT `cart_id`, `user_id`, `product_id`, `product_name`, `unit_price`, `quantity`, "
+        "`line_total`, `discount_percentage`, `line_discounted_total`, `cart_total`, "
+        "`cart_discounted_total`, `total_products`, `total_quantity`, `source`, `batch_date`, "
+        "`category_hint` FROM tmp_carts_dwd_20260701" in statement
         for statement in spark.sql_calls
     )
 
