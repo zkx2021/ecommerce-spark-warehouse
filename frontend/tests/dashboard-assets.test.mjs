@@ -189,6 +189,26 @@ for (const token of [
 }
 assert.match(appSource, /refreshRequestId/)
 assert.match(appSource, /requestId !== refreshRequestId/)
+assert.match(appSource, /productRankLabelWidth/)
+assert.match(appSource, /containLabel:\s*true/)
+assert.match(appSource, /overflow:\s*'break'/)
+assert.match(appSource, /formatter: \(params\) =>/)
+assert.match(appSource, /销售额：/)
+assert.match(appSource, /销量：/)
+assert.match(appSource, /formatProfileAxisLabel/)
+assert.match(appSource, /interval:\s*0/)
+assert.match(appSource, /电商数据经营看板/)
+assert.doesNotMatch(appSource, /Spark \+ HDFS \+ Hive/)
+assert.match(appSource, /dashboard-column--left/)
+assert.match(appSource, /dashboard-column--right/)
+assert.match(appSource, /categoryShareOption" height="340px"/)
+assert.match(appSource, /userProfileOption" height="330px"/)
+assert.match(appSource, /productRankOption" height="340px"/)
+assert.match(appSource, /productRankLabelWidth = 220/)
+assert.match(appSource, /left:\s*'16%'/)
+assert.match(appSource, /width:\s*'62%'/)
+assert.match(appSource, /maxSize:\s*'78%'/)
+assert.match(appSource, /labelLine:/)
 for (const pattern of [
   /catch/,
   /finally/,
@@ -221,6 +241,9 @@ for (const token of [
 
 assert.match(cssSource, /repeat\(4,\s*minmax\(0,\s*1fr\)\)/)
 assert.match(cssSource, /repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
+assert.match(cssSource, /grid-template-areas:\s*"left right"\s*"trend trend"/)
+assert.match(cssSource, /dashboard-column--left/)
+assert.match(cssSource, /dashboard-column--right/)
 assert.match(cssSource, /flex-wrap:\s*wrap/)
 assert.match(cssSource, /overflow-wrap:\s*anywhere/)
 assert.doesNotMatch(cssSource, /radial-gradient/)

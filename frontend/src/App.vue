@@ -2,7 +2,7 @@
   <main class="dashboard-shell">
     <header class="dashboard-header">
       <div>
-        <p class="dashboard-eyebrow">Spark + HDFS + Hive 离线数仓</p>
+        <p class="dashboard-eyebrow">电商数据经营看板</p>
         <h1>电商经营分析大屏</h1>
       </div>
 
@@ -33,25 +33,25 @@
     </section>
 
     <section class="dashboard-grid" aria-label="经营分析图表">
-      <div class="dashboard-column dashboard-column--side">
+      <div class="dashboard-column dashboard-column--side dashboard-column--left">
         <DashboardPanel title="品类销售占比" meta="按销售额">
-          <BaseChart :option="categoryShareOption" height="250px" />
+          <BaseChart :option="categoryShareOption" height="340px" />
         </DashboardPanel>
         <DashboardPanel title="用户画像" meta="人群维度">
-          <BaseChart :option="userProfileOption" height="250px" />
+          <BaseChart :option="userProfileOption" height="330px" />
         </DashboardPanel>
       </div>
 
       <DashboardPanel title="销售趋势" meta="近 7 个周期" class="dashboard-panel--hero">
-        <BaseChart :option="trendOption" height="560px" />
+        <BaseChart :option="trendOption" height="460px" />
       </DashboardPanel>
 
-      <div class="dashboard-column dashboard-column--side">
+      <div class="dashboard-column dashboard-column--side dashboard-column--right">
         <DashboardPanel title="商品销售排行" meta="TOP 5">
-          <BaseChart :option="productRankOption" height="250px" />
+          <BaseChart :option="productRankOption" height="340px" />
         </DashboardPanel>
         <DashboardPanel title="转化漏斗" meta="曝光到支付">
-          <BaseChart :option="funnelOption" height="250px" />
+          <BaseChart :option="funnelOption" height="330px" />
         </DashboardPanel>
       </div>
     </section>
@@ -223,10 +223,23 @@ const trendOption = computed(() => {
 
 const productRankOption = computed(() => {
   const rows = [...overview.value.product_rank].sort((a, b) => a.rank_no - b.rank_no)
+  const productRankLabelWidth = 220
   return {
     color: ['#60a5fa'],
-    tooltip: { trigger: 'axis' },
-    grid: { left: 92, right: 20, top: 18, bottom: 20 },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const point = Array.isArray(params) ? params[0] : params
+        const row = rows[point.dataIndex]
+        return [
+          row.product_name,
+          `销售额：${formatMoney(row.sales_amount)}`,
+          `销量：${formatCount(row.sales_quantity)}`
+        ].join('<br/>')
+      }
+    },
+    grid: { left: 10, right: 28, top: 18, bottom: 24, containLabel: true },
     xAxis: {
       type: 'value',
       ...baseAxis,
@@ -236,7 +249,14 @@ const productRankOption = computed(() => {
       type: 'category',
       inverse: true,
       data: rows.map((item) => item.product_name),
-      ...baseAxis
+      ...baseAxis,
+      axisLabel: {
+        color: mutedTextColor,
+        width: productRankLabelWidth,
+        overflow: 'break',
+        lineHeight: 16,
+        margin: 12
+      }
     },
     series: [
       {
@@ -263,14 +283,15 @@ const categoryShareOption = computed(() => ({
   },
   legend: {
     bottom: 0,
+    type: 'scroll',
     textStyle: { color: chartTextColor }
   },
   series: [
     {
       name: '品类销售占比',
       type: 'pie',
-      radius: ['46%', '70%'],
-      center: ['50%', '44%'],
+      radius: ['42%', '66%'],
+      center: ['50%', '42%'],
       avoidLabelOverlap: true,
       label: {
         color: chartTextColor,
@@ -285,6 +306,12 @@ const categoryShareOption = computed(() => ({
   ]
 }))
 
+function formatProfileAxisLabel(value) {
+  const separatorIndex = value.indexOf(':')
+  if (separatorIndex < 0) return value
+  return `${value.slice(0, separatorIndex)}\n${value.slice(separatorIndex + 1)}`
+}
+
 const userProfileOption = computed(() => {
   const rows = overview.value.user_profile
   return {
@@ -294,11 +321,20 @@ const userProfileOption = computed(() => {
       top: 0,
       textStyle: { color: chartTextColor }
     },
-    grid: { left: 42, right: 18, top: 42, bottom: 30, containLabel: true },
+    grid: { left: 42, right: 18, top: 42, bottom: 66, containLabel: true },
     xAxis: {
       type: 'category',
       data: rows.map((item) => `${item.dimension_type}:${item.dimension_value}`),
-      ...baseAxis
+      ...baseAxis,
+      axisLabel: {
+        color: mutedTextColor,
+        interval: 0,
+        width: 124,
+        overflow: 'break',
+        lineHeight: 16,
+        margin: 14,
+        formatter: formatProfileAxisLabel
+      }
     },
     yAxis: {
       type: 'value',
@@ -332,17 +368,21 @@ const funnelOption = computed(() => {
       {
         name: '转化漏斗',
         type: 'funnel',
-        left: '8%',
+        left: '16%',
         top: 12,
         bottom: 8,
-        width: '84%',
-        minSize: '28%',
-        maxSize: '94%',
+        width: '62%',
+        minSize: '22%',
+        maxSize: '78%',
         sort: 'none',
         gap: 4,
         label: {
           color: chartTextColor,
           formatter: ({ data }) => `${data.name} ${formatPercent(data.conversionRate)}`
+        },
+        labelLine: {
+          length: 12,
+          length2: 8
         },
         data: rows.map((item) => ({
           name: item.stage_name,
