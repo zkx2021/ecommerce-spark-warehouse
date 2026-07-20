@@ -103,20 +103,24 @@ services:
       start_period: 10s
 
   spark-master:
-    image: bitnami/spark:3.5
+    image: ${SPARK_IMAGE:-apache/spark:3.5.6}
     container_name: esw-spark-master
-    environment:
-      SPARK_MODE: master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - 0.0.0.0
     ports:
       - "7077:7077"
       - "8081:8080"
 
   spark-worker:
-    image: bitnami/spark:3.5
+    image: ${SPARK_IMAGE:-apache/spark:3.5.6}
     container_name: esw-spark-worker
-    environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://spark-master:7077
     depends_on:
       - spark-master
 

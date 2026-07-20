@@ -76,6 +76,7 @@ Assert-FileContains "docker-compose.yml" "^\s{2}backend:\s*$" "docker compose ba
 Assert-FileContains "docker-compose.yml" "^\s{2}frontend:\s*$" "docker compose frontend service"
 Assert-FileContains ".env.example" "^BACKEND_PORT=8000$" "backend host port"
 Assert-FileContains ".env.example" "^FRONTEND_PORT=8088$" "frontend host port"
+Assert-FileContains ".env.example" "^SPARK_IMAGE=apache/spark:3\.5\.6$" "spark image override"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "BackendBaseUrl" "smoke test backend URL parameter"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "FrontendBaseUrl" "smoke test frontend URL parameter"
 
