@@ -52,6 +52,8 @@ $requiredPaths = @(
   "warehouse/spark/jobs/ads_job.py",
   "warehouse/spark/jobs/ads_sql.py",
   "warehouse/scripts/export_ads_mysql.py",
+  "docs/project-acceptance.md",
+  "docs/demo-runbook.md",
   "docs/deployment-integration.md",
   "docs/github-workflow.md",
   "deploy/hadoop/core-site.xml",
@@ -114,5 +116,9 @@ Assert-FileContains "warehouse/spark/jobs/dwd_job.py" "thrift://hive-metastore:9
 Assert-FileContains "warehouse/spark/jobs/ads_job.py" "thrift://hive-metastore:9083" "ADS Spark job uses external Hive metastore"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "BackendBaseUrl" "smoke test backend URL parameter"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "FrontendBaseUrl" "smoke test frontend URL parameter"
+Assert-FileContains "docs/project-acceptance.md" "Crawler -> Local raw/processed files -> HDFS -> Hive ODS" "project acceptance documents end-to-end data flow"
+Assert-FileContains "docs/project-acceptance.md" "quality-report.json" "project acceptance documents quality report evidence"
+Assert-FileContains "docs/demo-runbook.md" "run_offline_batch.ps1" "demo runbook documents one-command offline batch"
+Assert-FileContains "docs/demo-runbook.md" "http://127.0.0.1:8088" "demo runbook documents dashboard URL"
 
 Write-Host "Project foundation check passed."

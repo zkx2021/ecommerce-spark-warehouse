@@ -2,6 +2,11 @@
 
 This guide starts the local stack that connects the ADS MySQL result tables to the FastAPI API and the Vue/ECharts dashboard.
 
+Related final delivery docs:
+
+- [Project acceptance](project-acceptance.md)
+- [Demo runbook](demo-runbook.md)
+
 ## Service Path
 
 ```text
