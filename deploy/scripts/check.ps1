@@ -44,6 +44,8 @@ $requiredPaths = @(
   "warehouse/scripts/run_ads.ps1",
   "warehouse/scripts/run_offline_batch.ps1",
   "warehouse/scripts/export_ads_mysql.ps1",
+  "warehouse/scripts/quality_check.py",
+  "warehouse/scripts/run_quality_check.ps1",
   "warehouse/spark/jobs/dwd_job.py",
   "warehouse/spark/jobs/dwd_transforms.py",
   "warehouse/spark/jobs/ads_job.py",
@@ -102,7 +104,11 @@ Assert-FileContains "warehouse/scripts/run_ads.ps1" 'PYTHONPATH=\$containerProje
 Assert-FileContains "warehouse/scripts/run_ads.ps1" "containerBatchExportDir" "ADS script copies only one batch snapshot directory"
 Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "run-summary.json" "offline batch runner writes summary"
 Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "logs/offline-batch" "offline batch runner writes stage logs"
-Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'smoke_test" "offline batch runner preserves stage order"
+Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'quality_check', 'smoke_test" "offline batch runner preserves stage order"
+Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "quality_check.log" "offline batch runner writes quality check log"
+Assert-FileContains "warehouse/scripts/run_offline_batch.ps1" "warehouse/scripts/run_quality_check.ps1" "offline batch runner invokes quality check wrapper"
+Assert-FileContains "warehouse/scripts/run_quality_check.ps1" "quality_check.py" "quality check wrapper calls Python checker"
+Assert-FileContains "warehouse/scripts/quality_check.py" "quality-report.json" "quality checker writes report"
 Assert-FileContains "warehouse/spark/jobs/dwd_job.py" "thrift://hive-metastore:9083" "DWD Spark job uses external Hive metastore"
 Assert-FileContains "warehouse/spark/jobs/ads_job.py" "thrift://hive-metastore:9083" "ADS Spark job uses external Hive metastore"
 Assert-FileContains "deploy/scripts/smoke_test.ps1" "BackendBaseUrl" "smoke test backend URL parameter"

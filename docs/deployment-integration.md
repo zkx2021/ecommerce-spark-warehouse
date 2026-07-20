@@ -101,6 +101,9 @@ If crawler data already exists and you only want to refresh warehouse and dashbo
 powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1 -BatchDate 2026-07-01 -SkipStages crawler
 ```
 
+The `quality_check` stage validates data and is not data cleaning. It does not modify data.
+It writes `quality-report.json` beside the offline batch logs. If the stage fails, inspect the report before presenting the dashboard.
+
 If a downstream stage fails, inspect `logs/offline-batch/<batch-date>/<run-id>/<stage>.log`, fix the local issue, then resume:
 
 ```powershell

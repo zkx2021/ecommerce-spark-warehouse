@@ -3,10 +3,10 @@ param(
   [ValidatePattern('^\d{4}-\d{2}-\d{2}$')]
   [string]$BatchDate,
 
-  [ValidateSet('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'smoke_test')]
+  [ValidateSet('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'quality_check', 'smoke_test')]
   [string]$StartFrom = 'crawler',
 
-  [ValidateSet('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'smoke_test')]
+  [ValidateSet('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'quality_check', 'smoke_test')]
   [string[]]$SkipStages = @(),
 
   [string]$LogsRoot = 'logs/offline-batch',
@@ -18,7 +18,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$StageOrder = @('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'smoke_test')
+$StageOrder = @('crawler', 'ods_check', 'ods_ddl', 'ods_load', 'dwd', 'ads', 'mysql_export', 'quality_check', 'smoke_test')
 $AllowedStageStatuses = @('success', 'failed', 'skipped', 'not_run')
 $StageLogNames = @{
   crawler = 'crawler.log'
@@ -28,6 +28,7 @@ $StageLogNames = @{
   dwd = 'dwd.log'
   ads = 'ads.log'
   mysql_export = 'mysql_export.log'
+  quality_check = 'quality_check.log'
   smoke_test = 'smoke_test.log'
 }
 $StageScriptReferences = @{
@@ -38,6 +39,7 @@ $StageScriptReferences = @{
   dwd = 'warehouse/scripts/run_dwd.ps1'
   ads = 'warehouse/scripts/run_ads.ps1'
   mysql_export = 'warehouse/scripts/export_ads_mysql.ps1'
+  quality_check = 'warehouse/scripts/run_quality_check.ps1'
   smoke_test = 'deploy/scripts/smoke_test.ps1'
 }
 
@@ -105,7 +107,8 @@ function Get-StageCommand {
     [string]$ProjectRoot,
     [string]$BatchDate,
     [string]$BackendBaseUrl,
-    [string]$FrontendBaseUrl
+    [string]$FrontendBaseUrl,
+    [string]$RunDir
   )
 
   switch ($Stage) {
@@ -151,6 +154,12 @@ function Get-StageCommand {
         Arguments = @("-ExecutionPolicy", "Bypass", "-File", "warehouse/scripts/export_ads_mysql.ps1", "-BatchDate", $BatchDate)
       }
     }
+    "quality_check" {
+      return @{
+        FilePath = "powershell"
+        Arguments = @("-ExecutionPolicy", "Bypass", "-File", "warehouse/scripts/run_quality_check.ps1", "-BatchDate", $BatchDate, "-ReportDir", $RunDir)
+      }
+    }
     "smoke_test" {
       return @{
         FilePath = "powershell"
@@ -170,33 +179,36 @@ function Invoke-LoggedStage {
     [string]$RunDir
   )
 
-  $stdoutPath = Join-Path $RunDir "$Stage.stdout.tmp"
-  $stderrPath = Join-Path $RunDir "$Stage.stderr.tmp"
   $logPath = Join-Path $RunDir "$Stage.log"
   $displayCommand = ((@($Command.FilePath) + $Command.Arguments) -join " ")
 
   "Command: $displayCommand" | Set-Content -LiteralPath $logPath -Encoding UTF8
   "" | Add-Content -LiteralPath $logPath -Encoding UTF8
 
-  $process = Start-Process -FilePath $Command.FilePath `
-    -ArgumentList $Command.Arguments `
-    -WorkingDirectory $ProjectRoot `
-    -NoNewWindow `
-    -Wait `
-    -PassThru `
-    -RedirectStandardOutput $stdoutPath `
-    -RedirectStandardError $stderrPath
-
-  if (Test-Path -LiteralPath $stdoutPath) {
-    Get-Content -LiteralPath $stdoutPath -Raw -ErrorAction SilentlyContinue | Add-Content -LiteralPath $logPath -Encoding UTF8
-    Remove-Item -LiteralPath $stdoutPath -Force
+  Push-Location $ProjectRoot
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = "Continue"
+    $stageOutput = & $Command.FilePath @($Command.Arguments) 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($null -eq $exitCode) {
+      $exitCode = if ($?) { 0 } else { 1 }
+    }
   }
-  if (Test-Path -LiteralPath $stderrPath) {
-    Get-Content -LiteralPath $stderrPath -Raw -ErrorAction SilentlyContinue | Add-Content -LiteralPath $logPath -Encoding UTF8
-    Remove-Item -LiteralPath $stderrPath -Force
+  catch {
+    $stageOutput = $_
+    $exitCode = 1
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+    Pop-Location
   }
 
-  return $process.ExitCode
+  if ($null -ne $stageOutput) {
+    $stageOutput | Out-String | Add-Content -LiteralPath $logPath -Encoding UTF8
+  }
+
+  return $exitCode
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -232,7 +244,7 @@ foreach ($record in $summary.stages) {
   $stage = $record.name
   Write-Host "[$stage] starting..."
   $record.started_at = (Get-Date).ToString("o")
-  $command = Get-StageCommand -Stage $stage -ProjectRoot $projectRoot -BatchDate $BatchDate -BackendBaseUrl $BackendBaseUrl -FrontendBaseUrl $FrontendBaseUrl
+  $command = Get-StageCommand -Stage $stage -ProjectRoot $projectRoot -BatchDate $BatchDate -BackendBaseUrl $BackendBaseUrl -FrontendBaseUrl $FrontendBaseUrl -RunDir $runDir
   $exitCode = Invoke-LoggedStage -Stage $stage -Command $command -ProjectRoot $projectRoot -RunDir $runDir
   $record.exit_code = $exitCode
   $record.finished_at = (Get-Date).ToString("o")

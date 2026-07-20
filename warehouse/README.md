@@ -23,7 +23,7 @@ powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1
 The runner executes:
 
 ```text
-crawler -> ods_check -> ods_ddl -> ods_load -> dwd -> ads -> mysql_export -> smoke_test
+crawler -> ods_check -> ods_ddl -> ods_load -> dwd -> ads -> mysql_export -> quality_check -> smoke_test
 ```
 
 Resume from a failed stage after fixing the local issue:
@@ -40,6 +40,22 @@ powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_offline_batch.ps1
 
 Each run writes logs and `run-summary.json` under `logs/offline-batch/<batch-date>/<run-id>/`.
 This is local orchestration for development and demos, not a production scheduler.
+
+## Quality Check
+
+`quality_check` is not data cleaning. It validates local batch outputs and does not modify data.
+
+The standalone command is:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File warehouse/scripts/run_quality_check.ps1 -BatchDate 2026-07-01
+```
+
+The offline runner executes `quality_check` after `mysql_export` and before `smoke_test`.
+If a critical rule fails, the runner stops before the dashboard smoke test.
+
+Inspect `quality-report.json` in the run log directory first when a quality check fails.
+Warning rules appear in the report but do not fail the batch.
 
 ## ODS Batch Flow
 
